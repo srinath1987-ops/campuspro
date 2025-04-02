@@ -9,16 +9,232 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      bus_details: {
+        Row: {
+          bus_capacity: number
+          bus_number: string
+          driver_name: string
+          driver_phone: string
+          in_campus: boolean
+          in_time: string | null
+          last_updated: string
+          out_time: string | null
+          rfid_id: string
+          start_point: string
+        }
+        Insert: {
+          bus_capacity: number
+          bus_number: string
+          driver_name: string
+          driver_phone: string
+          in_campus?: boolean
+          in_time?: string | null
+          last_updated?: string
+          out_time?: string | null
+          rfid_id: string
+          start_point: string
+        }
+        Update: {
+          bus_capacity?: number
+          bus_number?: string
+          driver_name?: string
+          driver_phone?: string
+          in_campus?: boolean
+          in_time?: string | null
+          last_updated?: string
+          out_time?: string | null
+          rfid_id?: string
+          start_point?: string
+        }
+        Relationships: []
+      }
+      bus_routes: {
+        Row: {
+          bus_number: string | null
+          id: number
+          rfid_id: string | null
+          route_no: string
+          stops: Json
+          via: string | null
+        }
+        Insert: {
+          bus_number?: string | null
+          id?: number
+          rfid_id?: string | null
+          route_no: string
+          stops: Json
+          via?: string | null
+        }
+        Update: {
+          bus_number?: string | null
+          id?: number
+          rfid_id?: string | null
+          route_no?: string
+          stops?: Json
+          via?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_routes_bus_number_fkey"
+            columns: ["bus_number"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["bus_number"]
+          },
+          {
+            foreignKeyName: "bus_routes_rfid_id_fkey"
+            columns: ["rfid_id"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["rfid_id"]
+          },
+        ]
+      }
+      bus_student_count: {
+        Row: {
+          bus_number: string
+          date: string
+          id: number
+          rfid_id: string | null
+          student_count: number
+          time: string
+        }
+        Insert: {
+          bus_number: string
+          date: string
+          id?: number
+          rfid_id?: string | null
+          student_count: number
+          time: string
+        }
+        Update: {
+          bus_number?: string
+          date?: string
+          id?: number
+          rfid_id?: string | null
+          student_count?: number
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_student_count_bus_number_fkey"
+            columns: ["bus_number"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["bus_number"]
+          },
+          {
+            foreignKeyName: "bus_student_count_rfid_id_fkey"
+            columns: ["rfid_id"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["rfid_id"]
+          },
+        ]
+      }
+      bus_times: {
+        Row: {
+          bus_number: string
+          created_at: string
+          date_in: string | null
+          date_out: string | null
+          id: number
+          in_time: string | null
+          out_time: string | null
+          rfid_id: string | null
+        }
+        Insert: {
+          bus_number: string
+          created_at?: string
+          date_in?: string | null
+          date_out?: string | null
+          id?: number
+          in_time?: string | null
+          out_time?: string | null
+          rfid_id?: string | null
+        }
+        Update: {
+          bus_number?: string
+          created_at?: string
+          date_in?: string | null
+          date_out?: string | null
+          id?: number
+          in_time?: string | null
+          out_time?: string | null
+          rfid_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bus_times_bus_number_fkey"
+            columns: ["bus_number"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["bus_number"]
+          },
+          {
+            foreignKeyName: "bus_times_rfid_id_fkey"
+            columns: ["rfid_id"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["rfid_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bus_number: string | null
+          created_at: string
+          email: string
+          id: string
+          last_login: string | null
+          phone_number: string
+          role: Database["public"]["Enums"]["app_role"]
+          username: string
+        }
+        Insert: {
+          bus_number?: string | null
+          created_at?: string
+          email: string
+          id: string
+          last_login?: string | null
+          phone_number: string
+          role: Database["public"]["Enums"]["app_role"]
+          username: string
+        }
+        Update: {
+          bus_number?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          last_login?: string | null
+          phone_number?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_bus_number_fkey"
+            columns: ["bus_number"]
+            isOneToOne: false
+            referencedRelation: "bus_details"
+            referencedColumns: ["bus_number"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: {
+          user_id: string
+        }
+        Returns: string
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "driver"
     }
     CompositeTypes: {
       [_ in never]: never
