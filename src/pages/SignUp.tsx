@@ -23,6 +23,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -40,6 +47,8 @@ const signUpSchema = z.object({
   phone: z.string().min(10, {
     message: "Please enter a valid phone number.",
   }),
+  role: z.enum(['admin', 'driver']).default('driver'),
+  bus_number: z.string().optional(),
 });
 
 type SignUpValues = z.infer<typeof signUpSchema>;
@@ -56,13 +65,24 @@ const SignUp = () => {
       email: "",
       password: "",
       phone: "",
+      role: "driver",
+      bus_number: "",
     },
   });
+
+  const watchRole = form.watch("role");
 
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
-      await signUp(values.email, values.password, values.username, values.phone);
+      await signUp(
+        values.email, 
+        values.password, 
+        values.username, 
+        values.phone, 
+        values.role,
+        values.bus_number
+      );
       navigate('/login');
     } catch (error) {
       console.error('Signup error:', error);
@@ -144,6 +164,46 @@ const SignUp = () => {
                       </FormItem>
                     )}
                   />
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Role</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select your role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="driver">Driver</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  {watchRole === "driver" && (
+                    <FormField
+                      control={form.control}
+                      name="bus_number"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Bus Number</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter assigned bus number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   
                   <Button 
                     type="submit" 

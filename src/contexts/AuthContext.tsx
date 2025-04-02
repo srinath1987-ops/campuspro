@@ -18,7 +18,7 @@ type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, username: string, phone: string, role?: 'admin' | 'driver') => Promise<void>;
+  signUp: (email: string, password: string, username: string, phone: string, role?: 'admin' | 'driver', bus_number?: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   getUserRole: () => 'admin' | 'driver' | null;
@@ -108,7 +108,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string, 
     username: string, 
     phone: string,
-    role: 'admin' | 'driver' = 'driver'
+    role: 'admin' | 'driver' = 'driver',
+    bus_number?: string
   ) => {
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -119,6 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             username,
             role,
             phone_number: phone,
+            bus_number: bus_number || null,
           },
         },
       });

@@ -7,7 +7,12 @@ export const checkUserExists = async (email: string): Promise<boolean> => {
       .from('profiles')
       .select('email')
       .eq('email', email)
-      .single();
+      .maybeSingle();
+    
+    if (error) {
+      console.error('Error checking if user exists:', error);
+      return false;
+    }
     
     return !!data;
   } catch (error) {
