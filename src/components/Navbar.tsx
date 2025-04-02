@@ -1,9 +1,18 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { BusFront, Info, MapPin, Layers, LogIn } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User } from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useAuth } from '@/contexts/AuthContext';
 
 const NavItem = ({ 
   to, 
@@ -25,6 +34,14 @@ const NavItem = ({
 );
 
 const Navbar = () => {
+  const { user, profile, signOut } = useAuth();
+  const navigate = useNavigate();
+  
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
+
   return (
     <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-border py-3">
       <div className="container mx-auto px-4 flex justify-between items-center">
@@ -39,10 +56,51 @@ const Navbar = () => {
           <NavItem to="/" icon={BusFront}>Home</NavItem>
           <NavItem to="/about" icon={Info}>About</NavItem>
           <NavItem to="/bus-points" icon={MapPin}>Bus Points</NavItem>
-          <NavItem to="/features" icon={Layers}>Features</NavItem>
-          <NavItem to="/login" icon={LogIn} className="bg-primary text-primary-foreground hover:bg-primary/90">
-            Login
-          </NavItem>
+          
+          {user ? (
+            <>
+              {profile?.role === 'admin' && (
+                <NavItem to="/admin/dashboard" icon={Layers}>Dashboard</NavItem>
+              )}
+              {profile?.role === 'driver' && (
+                <NavItem to="/driver/dashboard" icon={Layers}>Dashboard</NavItem>
+              )}
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="rounded-full ml-2">
+                    <User className="h-4 w-4 mr-2" />
+                    {profile?.username || 'Account'}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuItem disabled>
+                    {profile?.role === 'admin' ? 'Admin' : 'Driver'}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <Link to={profile?.role === 'admin' ? '/admin/dashboard' : '/driver/dashboard'} className="w-full">
+                      Dashboard
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                    <LogOut className="h-4 w-4 mr-2" /> Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          ) : (
+            <>
+              <NavItem to="/login" icon={LogIn} className="bg-primary text-primary-foreground hover:bg-primary/90">
+                Login
+              </NavItem>
+              <NavItem to="/signup" icon={User} className="ml-1">
+                Sign Up
+              </NavItem>
+            </>
+          )}
         </div>
         
         <Button variant="outline" size="icon" className="md:hidden">
