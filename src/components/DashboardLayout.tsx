@@ -10,7 +10,9 @@ import {
   Settings, 
   LogOut,
   Menu,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -22,8 +24,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useAuth } from '@/contexts/AuthContext';
 
 type NavItemProps = {
   icon: React.ComponentType<any>;
@@ -31,16 +39,18 @@ type NavItemProps = {
   href: string;
   active?: boolean;
   onClick?: () => void;
+  className?: string;
 };
 
-const NavItem = ({ icon: Icon, label, href, active, onClick }: NavItemProps) => (
+const NavItem = ({ icon: Icon, label, href, active, onClick, className }: NavItemProps) => (
   <a 
     href={href} 
     className={cn(
       "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
       active 
         ? "bg-primary text-primary-foreground" 
-        : "text-gray-600 hover:bg-primary/10 hover:text-primary"
+        : "text-gray-600 hover:bg-primary/10 hover:text-primary",
+      className
     )}
     onClick={(e) => {
       if (onClick) {
@@ -50,9 +60,37 @@ const NavItem = ({ icon: Icon, label, href, active, onClick }: NavItemProps) => 
     }}
   >
     <Icon className="h-5 w-5" />
-    <span>{label}</span>
+    <span className="flex-1">{label}</span>
   </a>
 );
+
+type NavGroupProps = {
+  label: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+};
+
+const NavGroup = ({ label, children, defaultOpen = true }: NavGroupProps) => {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  return (
+    <Collapsible
+      open={isOpen}
+      onOpenChange={setIsOpen}
+      className="w-full"
+    >
+      <CollapsibleTrigger asChild>
+        <button className="flex items-center justify-between w-full px-3 py-2 text-sm font-medium text-gray-500">
+          {label}
+          {isOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent className="space-y-1 pl-2">
+        {children}
+      </CollapsibleContent>
+    </Collapsible>
+  );
+};
 
 type DashboardLayoutProps = {
   children: React.ReactNode;
@@ -65,20 +103,13 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   
-  const userName = role === 'admin' ? 'Admin User' : 'Driver User';
-  const userInitials = role === 'admin' ? 'AU' : 'DU';
+  const userName = profile?.username || (role === 'admin' ? 'Admin User' : 'Driver User');
+  const userInitials = userName.substring(0, 2).toUpperCase();
 
   const handleLogout = () => {
-    // Clear user from localStorage
-    localStorage.removeItem('user');
-    
-    toast({
-      title: "Logged out successfully",
-      description: "You have been logged out of your account.",
-    });
-    
-    // Redirect to login page
+    signOut();
     navigate('/login');
   };
 
@@ -127,18 +158,38 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
           </Button>
         </div>
         
+        {/* User Profile Section */}
+        {sidebarOpen && (
+          <div className="p-4 border-b border-border">
+            <div className="flex items-center gap-3">
+              <Avatar>
+                <AvatarImage src="" />
+                <AvatarFallback className="bus-gradient-bg text-white">
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{userName}</p>
+                <p className="text-xs text-gray-500 truncate capitalize">{role}</p>
+              </div>
+            </div>
+          </div>
+        )}
+        
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavItem 
-              key={item.label}
-              icon={item.icon}
-              label={item.label}
-              href={item.href}
-              active={currentPath === item.href}
-              onClick={() => navigate(item.href)}
-            />
-          ))}
+          <NavGroup label="Main">
+            {navItems.map((item) => (
+              <NavItem 
+                key={item.label}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                active={currentPath === item.href}
+                onClick={() => navigate(item.href)}
+              />
+            ))}
+          </NavGroup>
         </nav>
         
         {/* Logout */}
@@ -194,7 +245,7 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleLogout}>
+              <DropdownMenuItem onClick={handleLogout} className="text-red-500">
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>

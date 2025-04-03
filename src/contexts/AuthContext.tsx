@@ -103,6 +103,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (data) {
         console.log("Profile loaded:", data);
         setProfile(data as Profile);
+        
+        // Update last_login in the profile
+        await supabase
+          .from('profiles')
+          .update({ last_login: new Date().toISOString() })
+          .eq('id', userId);
       } else {
         console.log("No profile found for user ID:", userId);
       }

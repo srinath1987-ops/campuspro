@@ -18,6 +18,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   
   useEffect(() => {
+    console.log("ProtectedRoute - Auth state:", {
+      isLoading,
+      hasUser: !!user,
+      role: profile?.role,
+      requiredRole: allowedRole
+    });
+    
     if (!isLoading && !user) {
       toast({
         title: "Authentication required",
@@ -25,7 +32,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         variant: "destructive"
       });
     }
-  }, [isLoading, user, toast]);
+  }, [isLoading, user, toast, allowedRole, profile]);
 
   // Show loading indicator while auth state is initializing
   if (isLoading) {

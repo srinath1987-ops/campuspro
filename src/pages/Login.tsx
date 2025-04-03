@@ -63,7 +63,7 @@ const Login = () => {
     if (user && profile) {
       redirectBasedOnRole(profile.role);
     }
-  }, [user, profile, navigate]);
+  }, [user, profile]);
 
   const redirectBasedOnRole = (role: string) => {
     console.log("Redirecting based on role:", role);
