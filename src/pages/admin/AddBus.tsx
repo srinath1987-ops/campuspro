@@ -45,7 +45,7 @@ import { supabase } from '@/integrations/supabase/client';
 // Define the form schema
 const busFormSchema = z.object({
   bus_number: z.string().min(2, { message: "Bus number is required" }),
-  bus_capacity: z.string().transform(val => parseInt(val, 10)),
+  bus_capacity: z.coerce.number().min(1, { message: "Bus capacity must be at least 1" }),
   rfid_id: z.string().min(2, { message: "RFID ID is required" }),
   driver_id: z.string().optional(),
   driver_name: z.string().min(2, { message: "Driver name is required" }),
@@ -83,7 +83,7 @@ const AddBus = () => {
     resolver: zodResolver(busFormSchema),
     defaultValues: {
       bus_number: "",
-      bus_capacity: "0",
+      bus_capacity: 0,
       rfid_id: "",
       driver_id: "",
       driver_name: "",
@@ -149,7 +149,7 @@ const AddBus = () => {
         .from('bus_details')
         .insert({
           bus_number: values.bus_number,
-          bus_capacity: values.bus_capacity,
+          bus_capacity: values.bus_capacity, // This is now correctly a number
           rfid_id: values.rfid_id,
           driver_name: values.driver_name,
           driver_phone: values.driver_phone,
