@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,13 +16,15 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, profile, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   
   useEffect(() => {
     console.log("ProtectedRoute - Auth state:", {
       isLoading,
       hasUser: !!user,
       role: profile?.role,
-      requiredRole: allowedRole
+      requiredRole: allowedRole,
+      path: location.pathname
     });
     
     if (!isLoading && !user) {
@@ -31,8 +33,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         description: "Please log in to access this page.",
         variant: "destructive"
       });
+    } else if (!isLoading && user && allowedRole && profile?.role !== allowedRole) {
+      toast({
+        title: "Access restricted",
+        description: `This page is only accessible to ${allowedRole}s.`,
+        variant: "destructive"
+      });
     }
-  }, [isLoading, user, toast, allowedRole, profile]);
+  }, [isLoading, user, toast, allowedRole, profile, location.pathname]);
 
   // Show loading indicator while auth state is initializing
   if (isLoading) {
@@ -43,9 +51,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // If not authenticated, redirect to login
+  // If not authenticated, redirect to login with return URL
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
   }
   
   // If a specific role is required and user doesn't have it

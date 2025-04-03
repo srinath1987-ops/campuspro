@@ -17,6 +17,7 @@ import AdminProfile from "./pages/admin/Profile";
 import AdminSettings from "./pages/admin/Settings";
 import AdminDrivers from "./pages/admin/Drivers";
 import AdminBuses from "./pages/admin/Buses";
+import AddBus from "./pages/admin/AddBus";
 import DriverDashboard from "./pages/driver/Dashboard";
 import DriverProfile from "./pages/driver/Profile";
 import DriverSettings from "./pages/driver/Settings";
@@ -85,6 +86,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRole="admin">
                   <AdminBuses />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/buses/add" 
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AddBus />
                 </ProtectedRoute>
               } 
             />

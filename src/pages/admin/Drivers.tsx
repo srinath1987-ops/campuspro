@@ -32,12 +32,24 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -60,6 +72,17 @@ type Bus = {
   rfid_id: string;
 };
 
+// Define the form schema using Zod
+const driverFormSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email address." }),
+  username: z.string().min(3, { message: "Username must be at least 3 characters." }),
+  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  phone: z.string().min(5, { message: "Please enter a valid phone number." }),
+  bus_number: z.string().optional(),
+});
+
+type DriverFormValues = z.infer<typeof driverFormSchema>;
+
 const Drivers = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [buses, setBuses] = useState<Bus[]>([]);
@@ -68,6 +91,18 @@ const Drivers = () => {
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
+
+  // Initialize react-hook-form
+  const form = useForm<DriverFormValues>({
+    resolver: zodResolver(driverFormSchema),
+    defaultValues: {
+      email: "",
+      username: "",
+      password: "",
+      phone: "",
+      bus_number: "",
+    },
+  });
 
   // Fetch drivers data
   useEffect(() => {
@@ -128,38 +163,18 @@ const Drivers = () => {
   };
 
   // Handle form submission for adding a new driver
-  const handleAddDriver = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
-    
-    // Extract values
-    const email = formData.get('email') as string;
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
-    const phone = formData.get('phone') as string;
-    const busNumber = formData.get('bus_number') as string || null;
-    
-    // Validate form
-    if (!email || !username || !password || !phone) {
-      toast({
-        title: 'Validation Error',
-        description: 'All fields except Bus Number are required.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
+  const onSubmit = async (values: DriverFormValues) => {
     try {
       // Sign up the user with Supabase Auth
       const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         options: {
           data: {
-            username,
+            username: values.username,
             role: 'driver',
-            phone_number: phone,
-            bus_number: busNumber,
+            phone_number: values.phone,
+            bus_number: values.bus_number || null,
           },
         },
       });
@@ -168,7 +183,7 @@ const Drivers = () => {
       
       toast({
         title: 'Success',
-        description: `Driver ${username} has been added. An email verification link has been sent.`,
+        description: `Driver ${values.username} has been added. An email verification link has been sent.`,
       });
       
       // Fetch the updated list of drivers
@@ -181,6 +196,8 @@ const Drivers = () => {
         setDrivers(updatedDrivers);
       }
       
+      // Reset form and close dialog
+      form.reset();
       setIsAddDialogOpen(false);
     } catch (error: any) {
       console.error('Error adding driver:', error);
@@ -216,48 +233,101 @@ const Drivers = () => {
                     Enter the details for the new driver. All fields except Bus Number are required.
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleAddDriver}>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="email">Email</Label>
-                      <Input id="email" name="email" type="email" placeholder="driver@example.com" required />
+                <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                      <FormField
+                        control={form.control}
+                        name="email"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Email</FormLabel>
+                            <FormControl>
+                              <Input placeholder="driver@example.com" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="username"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Username</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., JohnDoe" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="password"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Password</FormLabel>
+                            <FormControl>
+                              <Input type="password" placeholder="Temporary password" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="phone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Phone Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="e.g., 555-123-4567" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                      <FormField
+                        control={form.control}
+                        name="bus_number"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Assigned Bus (Optional)</FormLabel>
+                            <Select 
+                              onValueChange={field.onChange} 
+                              defaultValue={field.value}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a bus" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="">None</SelectItem>
+                                {buses.map(bus => (
+                                  <SelectItem key={bus.rfid_id} value={bus.bus_number}>
+                                    {bus.bus_number}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
-                      <Input id="username" name="username" placeholder="e.g., JohnDoe" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="password">Password</Label>
-                      <Input id="password" name="password" type="password" placeholder="Temporary password" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Phone Number</Label>
-                      <Input id="phone" name="phone" placeholder="e.g., 555-123-4567" required />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bus_number">Assigned Bus (Optional)</Label>
-                      <Select name="bus_number">
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a bus" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="">None</SelectItem>
-                          {buses.map(bus => (
-                            <SelectItem key={bus.rfid_id} value={bus.bus_number}>
-                              {bus.bus_number}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" type="button" onClick={() => setIsAddDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button type="submit">Add Driver</Button>
-                  </DialogFooter>
-                </form>
+                    <DialogFooter>
+                      <Button variant="outline" type="button" onClick={() => {
+                        form.reset();
+                        setIsAddDialogOpen(false);
+                      }}>
+                        Cancel
+                      </Button>
+                      <Button type="submit">Add Driver</Button>
+                    </DialogFooter>
+                  </form>
+                </Form>
               </DialogContent>
             </Dialog>
           </CardHeader>
