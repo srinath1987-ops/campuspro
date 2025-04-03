@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, Features, PanelRight } from 'lucide-react';
+import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,

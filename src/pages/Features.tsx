@@ -1,8 +1,8 @@
-
 import React from 'react';
-import { BusFront, Clock, Users, Bell, Shield, Smartphone, Database, Search, PenTool, UserPlus } from 'lucide-react';
+import { BusFront, Clock, Users, Bell, Shield, Smartphone, Database, Search, PenTool, UserPlus, LogIn } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { Button } from "@/components/ui/button";
 
 // Feature Card Component
 const FeatureCard = ({ 
@@ -206,7 +206,7 @@ const Features = () => {
               size="lg"
               className="bg-white text-primary hover:bg-gray-100"
             >
-              <LogIn className="mr-2 h-4 w-4" /> Log In Now
+              <LogIn className="h-4 w-4 mr-2" /> Log In Now
             </Button>
           </div>
         </div>
@@ -218,6 +218,3 @@ const Features = () => {
 };
 
 export default Features;
-
-// Import missing Lucide-React icons
-import { LogIn, Button } from 'lucide-react';
