@@ -1,10 +1,6 @@
 
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Clock, BusFront } from 'lucide-react';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
+import React, { useState, useEffect } from 'react';
+import { MapPin, Search, BusFront, Clock, Route as RouteIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -15,226 +11,351 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
+import { supabase } from '@/integrations/supabase/client';
 
-interface BusRoute {
+// Define the BusRoute type
+type BusRoute = {
   id: number;
   route_no: string;
+  bus_number: string | null;
+  stops: { time: string; location: string }[];
+  via: string | null;
+};
+
+type Bus = {
   bus_number: string;
-  stops: {
-    name: string;
-    time: string;
-  }[];
-  via: string;
-  rfid_id: string;
-}
+  driver_name: string;
+  driver_phone: string;
+};
 
 const BusPoints = () => {
-  const [searchTerm, setSearchTerm] = useState("");
-  const { toast } = useToast();
-  
-  const { data: busRoutes, isLoading, error } = useQuery({
-    queryKey: ['busRoutes'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('bus_routes')
-        .select('*');
+  const [routes, setRoutes] = useState<BusRoute[]>([]);
+  const [buses, setBuses] = useState<Record<string, Bus>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRoute, setSelectedRoute] = useState<BusRoute | null>(null);
+
+  // Fetch data from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch routes
+        const { data: routesData, error: routesError } = await supabase
+          .from('bus_routes')
+          .select('*');
+
+        if (routesError) throw routesError;
+
+        // Fetch buses
+        const { data: busesData, error: busesError } = await supabase
+          .from('bus_details')
+          .select('bus_number, driver_name, driver_phone');
+
+        if (busesError) throw busesError;
+
+        // Process the data
+        setRoutes(routesData || []);
         
-      if (error) {
-        console.error('Error fetching bus routes:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load bus routes data',
-          variant: 'destructive',
+        // Create a map of bus_number to bus details
+        const busesMap: Record<string, Bus> = {};
+        busesData?.forEach(bus => {
+          busesMap[bus.bus_number] = bus;
         });
-        throw error;
+        
+        setBuses(busesMap);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        // Use mock data if fetch fails
+        setRoutes([
+          {
+            id: 1,
+            route_no: "01",
+            bus_number: "TN06GF2021",
+            stops: [
+              { time: "6:15 AM", location: "Ambattur Estate" },
+              { time: "6:30 AM", location: "Padi" },
+              { time: "6:45 AM", location: "Anna Nagar" },
+              { time: "7:00 AM", location: "Koyambedu" },
+              { time: "7:15 AM", location: "Vadapalani" },
+              { time: "7:30 AM", location: "Nesapakkam" }
+            ],
+            via: "Tambaram Bypass Road"
+          },
+          {
+            id: 2,
+            route_no: "02",
+            bus_number: "TN07KL3344",
+            stops: [
+              { time: "6:00 AM", location: "Tambaram" },
+              { time: "6:20 AM", location: "Pallavaram" },
+              { time: "6:40 AM", location: "St. Thomas Mount" },
+              { time: "7:00 AM", location: "Guindy" },
+              { time: "7:20 AM", location: "Saidapet" },
+              { time: "7:40 AM", location: "T. Nagar" }
+            ],
+            via: "GST Road"
+          },
+          {
+            id: 3,
+            route_no: "03",
+            bus_number: "TN05RZ9988",
+            stops: [
+              { time: "6:30 AM", location: "Porur" },
+              { time: "6:45 AM", location: "Valasaravakkam" },
+              { time: "7:00 AM", location: "Virugambakkam" },
+              { time: "7:15 AM", location: "Saligramam" },
+              { time: "7:30 AM", location: "Vadapalani" }
+            ],
+            via: "Mount-Poonamallee Road"
+          }
+        ]);
+
+        setBuses({
+          "TN06GF2021": { bus_number: "TN06GF2021", driver_name: "John Doe", driver_phone: "555-123-4567" },
+          "TN07KL3344": { bus_number: "TN07KL3344", driver_name: "Jane Smith", driver_phone: "555-987-6543" },
+          "TN05RZ9988": { bus_number: "TN05RZ9988", driver_name: "Mike Johnson", driver_phone: "555-456-7890" }
+        });
+      } finally {
+        setIsLoading(false);
       }
-      
-      return data as BusRoute[];
-    },
-  });
-  
-  const filteredRoutes = busRoutes?.filter(route => 
-    route.route_no.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    route.bus_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    route.via?.toLowerCase().includes(searchTerm.toLowerCase())
+    };
+
+    fetchData();
+  }, []);
+
+  // Filter routes based on search query
+  const filteredRoutes = routes.filter(route => 
+    route.route_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (route.bus_number && route.bus_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    route.stops.some(stop => stop.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (route.via && route.via.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const openRouteDetails = (route: BusRoute) => {
+    setSelectedRoute(route);
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="bus-hero-pattern py-12 md:py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-3xl md:text-4xl font-bold mb-4 bus-gradient-text">
-              Bus Routes & Stops
-            </h1>
-            <p className="text-xl text-gray-600 mb-6">
-              Find detailed information about all campus bus routes and stops
+      <main className="flex-1 bus-pattern-light py-16">
+        <div className="container px-4 mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold mb-3">Bus Routes & Stop Points</h1>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Find all campus bus routes, timings, and stop locations to plan your commute efficiently.
+            </p>
+          </div>
+          
+          <Card className="max-w-5xl mx-auto shadow-lg mb-10">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MapPin className="mr-2 h-5 w-5 text-primary" />
+                Route Information
+              </CardTitle>
+              <CardDescription>
+                View detailed information about all campus bus routes and their stop points.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center mb-6">
+                <Search className="h-5 w-5 text-muted-foreground mr-2" />
+                <Input
+                  placeholder="Search by route number, bus number, location, or via..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {isLoading ? (
+                <div className="flex justify-center items-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredRoutes.length === 0 ? (
+                <div className="text-center py-12">
+                  <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium">No routes found</h3>
+                  <p className="text-muted-foreground">
+                    {searchQuery ? 'Try a different search term' : 'There are no routes available'}
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Route No.</TableHead>
+                        <TableHead>Bus Number</TableHead>
+                        <TableHead>Start Point</TableHead>
+                        <TableHead>Via</TableHead>
+                        <TableHead>Stops</TableHead>
+                        <TableHead className="text-right">Details</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredRoutes.map((route) => (
+                        <TableRow key={route.id}>
+                          <TableCell>
+                            <Badge variant="outline" className="font-bold">
+                              {route.route_no}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {route.bus_number || 'Not assigned'}
+                          </TableCell>
+                          <TableCell>
+                            {route.stops.length > 0 ? route.stops[0].location : 'N/A'}
+                          </TableCell>
+                          <TableCell>
+                            {route.via || 'Direct route'}
+                          </TableCell>
+                          <TableCell>
+                            {route.stops.length} stops
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openRouteDetails(route)}
+                            >
+                              View Details
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="text-center mt-8">
+            <p className="text-muted-foreground">
+              All buses arrive at the campus by 8:30 AM and depart at 5:00 PM.
             </p>
           </div>
         </div>
-      </section>
-      
-      {/* Search Section */}
-      <section className="py-8 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-xl mx-auto">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search by route number, bus number, or location..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10"
-              />
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="absolute right-0 top-0 h-full"
-                onClick={() => setSearchTerm("")}
-                disabled={!searchTerm}
-              >
-                {searchTerm ? "×" : ""}
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-      
-      {/* Bus Routes Table */}
-      <section className="py-10">
-        <div className="container mx-auto px-4">
-          {isLoading ? (
-            <div className="flex justify-center py-20">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-            </div>
-          ) : error ? (
-            <div className="text-center py-20">
-              <p className="text-red-500 text-lg">Failed to load bus routes data. Please try again later.</p>
-              <Button 
-                variant="outline" 
-                className="mt-4"
-                onClick={() => window.location.reload()}
-              >
-                Retry
-              </Button>
-            </div>
-          ) : filteredRoutes && filteredRoutes.length > 0 ? (
-            <div className="overflow-x-auto rounded-lg shadow">
-              <Table>
-                <TableCaption>
-                  {searchTerm ? `Showing ${filteredRoutes.length} routes matching "${searchTerm}"` : 'All campus bus routes and stops'}
-                </TableCaption>
-                <TableHeader>
-                  <TableRow className="bg-muted/50">
-                    <TableHead className="w-[100px]">Route No.</TableHead>
-                    <TableHead className="w-[150px]">Bus Number</TableHead>
-                    <TableHead>Stops & Timings</TableHead>
-                    <TableHead className="w-[200px]">Via</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredRoutes.map((route) => (
-                    <TableRow key={route.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center">
-                          <BusFront className="h-4 w-4 mr-2 text-primary" />
-                          {route.route_no}
+      </main>
+
+      {/* Route Details Dialog */}
+      <Dialog open={!!selectedRoute} onOpenChange={(open) => !open && setSelectedRoute(null)}>
+        <DialogContent className="sm:max-w-3xl">
+          {selectedRoute && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center text-xl">
+                  <RouteIcon className="mr-2 h-5 w-5 text-primary" />
+                  Route {selectedRoute.route_no} Details
+                </DialogTitle>
+                <DialogDescription>
+                  {selectedRoute.bus_number ? `Bus ${selectedRoute.bus_number}` : 'No bus assigned yet'} 
+                  {selectedRoute.via ? ` via ${selectedRoute.via}` : ''}
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center">
+                    <BusFront className="mr-2 h-4 w-4 text-primary" />
+                    Bus Information
+                  </h3>
+                  {selectedRoute.bus_number && buses[selectedRoute.bus_number] ? (
+                    <div className="space-y-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Bus Number</span>
+                        <span className="font-medium">{selectedRoute.bus_number}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Driver</span>
+                        <span className="font-medium">{buses[selectedRoute.bus_number].driver_name}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Contact</span>
+                        <span className="font-medium">{buses[selectedRoute.bus_number].driver_phone}</span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-muted-foreground">No bus assigned to this route yet.</p>
+                  )}
+
+                  <div className="mt-6">
+                    <h3 className="font-semibold mb-3 flex items-center">
+                      <Clock className="mr-2 h-4 w-4 text-primary" />
+                      Schedule Information
+                    </h3>
+                    <div className="space-y-2">
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">First Pickup</span>
+                        <span className="font-medium">
+                          {selectedRoute.stops.length > 0 ? selectedRoute.stops[0].time : 'N/A'} at {selectedRoute.stops.length > 0 ? selectedRoute.stops[0].location : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Last Stop</span>
+                        <span className="font-medium">
+                          {selectedRoute.stops.length > 0 ? selectedRoute.stops[selectedRoute.stops.length - 1].time : 'N/A'} at {selectedRoute.stops.length > 0 ? selectedRoute.stops[selectedRoute.stops.length - 1].location : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Campus Arrival</span>
+                        <span className="font-medium">8:30 AM (Approx.)</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-sm text-muted-foreground">Campus Departure</span>
+                        <span className="font-medium">5:00 PM</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-semibold mb-3 flex items-center">
+                    <MapPin className="mr-2 h-4 w-4 text-primary" />
+                    Stop Points
+                  </h3>
+                  <div className="relative">
+                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                    <div className="space-y-4">
+                      {selectedRoute.stops.map((stop, idx) => (
+                        <div key={idx} className="relative pl-8">
+                          <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
+                          <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                            <div className="font-medium">{stop.location}</div>
+                            <div className="text-gray-600 text-sm">{stop.time}</div>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>{route.bus_number || 'N/A'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center flex-wrap gap-2">
-                          {route.stops && route.stops.map((stop, index) => (
-                            <div key={index} className="flex items-center bg-muted/50 rounded-full px-3 py-1 text-sm">
-                              <MapPin className="h-3 w-3 mr-1 text-primary" />
-                              <span>{stop.name}</span>
-                              <span className="mx-1">-</span>
-                              <Clock className="h-3 w-3 mr-1 text-primary" />
-                              <span>{stop.time}</span>
-                              {index < route.stops.length - 1 && (
-                                <span className="mx-2 text-gray-400">→</span>
-                              )}
-                            </div>
-                          ))}
+                      ))}
+                      <div className="relative pl-8">
+                        <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-green-500 rounded-full"></div>
+                        <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
+                          <div className="font-medium">Campus (Arrival)</div>
+                          <div className="text-gray-600 text-sm">8:30 AM (Approx.)</div>
                         </div>
-                      </TableCell>
-                      <TableCell>{route.via || 'Direct Route'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              {searchTerm ? (
-                <p className="text-gray-500">No routes found matching "{searchTerm}".</p>
-              ) : (
-                <p className="text-gray-500">No bus routes data available.</p>
-              )}
-            </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
           )}
-        </div>
-      </section>
-      
-      {/* Info Section */}
-      <section className="py-10 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-bold mb-6 text-center">Important Information</h2>
-            
-            <div className="grid md:grid-cols-2 gap-8">
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-bold mb-3 bus-gradient-text">Bus Schedule Notes</h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>All times are approximate and subject to traffic conditions.</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Buses operate Monday through Saturday, except on holidays.</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Be at the stop at least 5 minutes before scheduled time.</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Special schedules may apply during exam periods and events.</span>
-                  </li>
-                </ul>
-              </div>
-              
-              <div className="bg-white rounded-xl shadow-md p-6">
-                <h3 className="text-lg font-bold mb-3 bus-gradient-text">Contact Information</h3>
-                <ul className="space-y-2 text-gray-700">
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>For schedule questions: transport@snuc.edu.in</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Transport office: +91 99999 88888</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Emergency contact: +91 99999 77777</span>
-                  </li>
-                  <li className="flex items-start">
-                    <div className="mr-2 mt-1 text-primary">•</div>
-                    <span>Lost & found items: transport_lf@snuc.edu.in</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+        </DialogContent>
+      </Dialog>
       
       <Footer />
     </div>

@@ -22,6 +22,8 @@ type AuthContextType = {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   getUserRole: () => 'admin' | 'driver' | null;
+  updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  updatePassword: (password: string) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,12 +38,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, currentSession) => {
+      async (event, currentSession) => {
+        console.log("Auth state changed:", event, currentSession?.user?.id);
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
         if (currentSession?.user) {
-          // Fetch user profile data but don't block the auth flow
           setTimeout(() => {
             fetchUserProfile(currentSession.user.id);
           }, 0);
@@ -55,7 +57,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const initializeAuth = async () => {
       setIsLoading(true);
       try {
+        console.log("Initializing auth...");
         const { data: { session: initialSession } } = await supabase.auth.getSession();
+        console.log("Got session:", initialSession?.user?.id);
         
         setSession(initialSession);
         setUser(initialSession?.user ?? null);
@@ -84,7 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      // Using the proper table name based on your Supabase schema
+      console.log("Fetching profile for user ID:", userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -92,14 +96,70 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error) {
+        console.error("Error fetching profile:", error);
         throw error;
       }
 
       if (data) {
+        console.log("Profile loaded:", data);
         setProfile(data as Profile);
+      } else {
+        console.log("No profile found for user ID:", userId);
       }
     } catch (error) {
       console.error('Error fetching profile:', error);
+    }
+  };
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setProfile(prev => prev ? { ...prev, ...updates } : null);
+      
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile has been updated successfully.',
+      });
+      
+    } catch (error: any) {
+      console.error('Error updating profile:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update profile.',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const updatePassword = async (password: string) => {
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: password,
+      });
+      
+      if (error) throw error;
+      
+      toast({
+        title: 'Password Updated',
+        description: 'Your password has been updated successfully.',
+      });
+      
+    } catch (error: any) {
+      console.error('Error updating password:', error);
+      toast({
+        title: 'Update Failed',
+        description: error.message || 'Failed to update password.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -146,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
+      console.log("Attempting login for:", email);
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -155,6 +216,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      console.log("Login successful:", data.user?.id);
+      
       // Fetch the profile immediately after successful login
       if (data.user) {
         await fetchUserProfile(data.user.id);
@@ -213,6 +276,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signIn,
     signOut,
     getUserRole,
+    updateProfile,
+    updatePassword
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

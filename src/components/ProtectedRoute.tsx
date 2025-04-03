@@ -1,7 +1,8 @@
 
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,6 +14,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   allowedRole 
 }) => {
   const { user, profile, isLoading } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (!isLoading && !user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to access this page.",
+        variant: "destructive"
+      });
+    }
+  }, [isLoading, user, toast]);
 
   // Show loading indicator while auth state is initializing
   if (isLoading) {

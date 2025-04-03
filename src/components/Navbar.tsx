@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -56,9 +56,14 @@ const NavItem = ({
 };
 
 const Navbar = () => {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  
+  // Debug logs
+  useEffect(() => {
+    console.log("Navbar auth state:", { user: !!user, profile: profile?.role, isLoading });
+  }, [user, profile, isLoading]);
   
   const handleLogout = async () => {
     await signOut();
@@ -109,12 +114,12 @@ const Navbar = () => {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link to={`${profile?.role}/profile`} className="w-full">
+                    <Link to={`/${profile?.role}/profile`} className="w-full">
                       Profile
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>
-                    <Link to={`${profile?.role}/settings`} className="w-full">
+                    <Link to={`/${profile?.role}/settings`} className="w-full">
                       Settings
                     </Link>
                   </DropdownMenuItem>
@@ -159,7 +164,7 @@ const Navbar = () => {
                       Signed in as: {profile?.username}
                     </p>
                     <NavItem 
-                      to={`${profile?.role}/profile`} 
+                      to={`/${profile?.role}/profile`} 
                       icon={User} 
                       isMobile 
                       onClick={() => setMobileMenuOpen(false)}
@@ -167,7 +172,7 @@ const Navbar = () => {
                       Profile
                     </NavItem>
                     <NavItem 
-                      to={`${profile?.role}/settings`} 
+                      to={`/${profile?.role}/settings`} 
                       icon={User} 
                       isMobile 
                       onClick={() => setMobileMenuOpen(false)}

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { BusFront, LogIn, UserPlus, Database } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -44,23 +44,10 @@ type LoginValues = z.infer<typeof loginSchema>;
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isSettingUpDemo, setIsSettingUpDemo] = useState(false);
-  const { signIn, session, profile } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (session && profile) {
-      redirectBasedOnRole(profile.role);
-    }
-  }, [session, profile, navigate]);
-
-  const redirectBasedOnRole = (role: string) => {
-    if (role === 'admin') {
-      navigate('/admin/dashboard');
-    } else if (role === 'driver') {
-      navigate('/driver/dashboard');
-    }
-  };
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -70,13 +57,32 @@ const Login = () => {
     },
   });
 
+  // Effect to redirect authenticated users
+  useEffect(() => {
+    console.log("Login page auth state:", { user: !!user, profile: profile?.role });
+    if (user && profile) {
+      redirectBasedOnRole(profile.role);
+    }
+  }, [user, profile, navigate]);
+
+  const redirectBasedOnRole = (role: string) => {
+    console.log("Redirecting based on role:", role);
+    if (role === 'admin') {
+      navigate('/admin/dashboard');
+    } else if (role === 'driver') {
+      navigate('/driver/dashboard');
+    }
+  };
+
   const onSubmit = async (values: LoginValues) => {
     setIsLoading(true);
     try {
+      console.log("Attempting to sign in:", values.email);
       await signIn(values.email, values.password);
       // Navigation is handled in the useEffect above
     } catch (error) {
       console.error('Login error:', error);
+      // Error toasts are handled in the AuthContext
     } finally {
       setIsLoading(false);
     }

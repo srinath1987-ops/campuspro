@@ -13,10 +13,23 @@ import BusPoints from "./pages/BusPoints";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import AdminDashboard from "./pages/admin/Dashboard";
+import AdminProfile from "./pages/admin/Profile";
+import AdminSettings from "./pages/admin/Settings";
+import AdminDrivers from "./pages/admin/Drivers";
+import AdminBuses from "./pages/admin/Buses";
 import DriverDashboard from "./pages/driver/Dashboard";
+import DriverProfile from "./pages/driver/Profile";
+import DriverSettings from "./pages/driver/Settings";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -44,12 +57,40 @@ const App = () => (
               } 
             />
             <Route 
-              path="/admin/*" 
+              path="/admin/profile" 
               element={
                 <ProtectedRoute allowedRole="admin">
-                  <AdminDashboard />
+                  <AdminProfile />
                 </ProtectedRoute>
               } 
+            />
+            <Route 
+              path="/admin/settings" 
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/drivers" 
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminDrivers />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/buses" 
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminBuses />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin" 
+              element={<Navigate to="/admin/dashboard" replace />} 
             />
             
             {/* Driver Routes */}
@@ -62,12 +103,24 @@ const App = () => (
               } 
             />
             <Route 
-              path="/driver/*" 
+              path="/driver/profile" 
               element={
                 <ProtectedRoute allowedRole="driver">
-                  <DriverDashboard />
+                  <DriverProfile />
                 </ProtectedRoute>
               } 
+            />
+            <Route 
+              path="/driver/settings" 
+              element={
+                <ProtectedRoute allowedRole="driver">
+                  <DriverSettings />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/driver" 
+              element={<Navigate to="/driver/dashboard" replace />} 
             />
             
             {/* Catch-all route */}
