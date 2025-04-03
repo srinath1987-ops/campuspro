@@ -25,6 +25,7 @@ import {
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
+import { Json } from '@/integrations/supabase/types';
 
 // Define the BusRoute type
 type BusRoute = {
@@ -39,6 +40,23 @@ type Bus = {
   bus_number: string;
   driver_name: string;
   driver_phone: string;
+};
+
+// Helper function to safely parse JSON data
+const safeParseStops = (stops: Json): { time: string; location: string }[] => {
+  if (Array.isArray(stops)) {
+    return stops as { time: string; location: string }[];
+  }
+  try {
+    if (typeof stops === 'string') {
+      const parsed = JSON.parse(stops);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    return [];
+  } catch (error) {
+    console.error('Error parsing stops:', error);
+    return [];
+  }
 };
 
 const BusPoints = () => {
@@ -68,7 +86,15 @@ const BusPoints = () => {
         if (busesError) throw busesError;
 
         // Process the data
-        setRoutes(routesData || []);
+        const processedRoutes: BusRoute[] = (routesData || []).map(route => ({
+          id: route.id,
+          route_no: route.route_no,
+          bus_number: route.bus_number,
+          via: route.via,
+          stops: safeParseStops(route.stops)
+        }));
+        
+        setRoutes(processedRoutes);
         
         // Create a map of bus_number to bus details
         const busesMap: Record<string, Bus> = {};
