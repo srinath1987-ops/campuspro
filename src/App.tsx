@@ -8,6 +8,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Index from "./pages/Index";
 import About from "./pages/About";
+import Features from "./pages/Features";
 import BusPoints from "./pages/BusPoints";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
@@ -28,6 +29,7 @@ const App = () => (
             {/* Public Routes */}
             <Route path="/" element={<Index />} />
             <Route path="/about" element={<About />} />
+            <Route path="/features" element={<Features />} />
             <Route path="/bus-points" element={<BusPoints />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
@@ -41,10 +43,26 @@ const App = () => (
                 </ProtectedRoute>
               } 
             />
+            <Route 
+              path="/admin/*" 
+              element={
+                <ProtectedRoute allowedRole="admin">
+                  <AdminDashboard />
+                </ProtectedRoute>
+              } 
+            />
             
             {/* Driver Routes */}
             <Route 
               path="/driver/dashboard" 
+              element={
+                <ProtectedRoute allowedRole="driver">
+                  <DriverDashboard />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/driver/*" 
               element={
                 <ProtectedRoute allowedRole="driver">
                   <DriverDashboard />

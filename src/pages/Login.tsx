@@ -50,13 +50,17 @@ const Login = () => {
 
   useEffect(() => {
     if (session && profile) {
-      if (profile.role === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (profile.role === 'driver') {
-        navigate('/driver/dashboard');
-      }
+      redirectBasedOnRole(profile.role);
     }
   }, [session, profile, navigate]);
+
+  const redirectBasedOnRole = (role: string) => {
+    if (role === 'admin') {
+      navigate('/admin/dashboard');
+    } else if (role === 'driver') {
+      navigate('/driver/dashboard');
+    }
+  };
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),

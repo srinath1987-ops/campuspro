@@ -131,7 +131,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       toast({
         title: 'Registration Successful',
-        description: 'Your account has been created successfully.',
+        description: 'Your account has been created successfully. Please check your email for verification.',
       });
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -155,6 +155,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw error;
       }
 
+      // Fetch the profile immediately after successful login
+      if (data.user) {
+        await fetchUserProfile(data.user.id);
+      }
+
       toast({
         title: 'Login Successful',
         description: 'Welcome back!',
@@ -176,6 +181,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (error) {
         throw error;
       }
+      
+      setProfile(null);
+      setUser(null);
+      setSession(null);
       
       toast({
         title: 'Logged Out',
