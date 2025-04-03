@@ -1,1 +1,21 @@
+
 project_id = "imhfvwavskweneysqrof"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+
+[db]
+port = 54322
+
+[realtime]
+enabled = true
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://localhost"
+
+[functions.http_bus_entry_exit]
+verify_jwt = false
