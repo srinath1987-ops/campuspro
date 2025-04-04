@@ -545,6 +545,13 @@ const Buses = () => {
                         >
                           View
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </Button>
                       </td>
                     </tr>
                   ))}
