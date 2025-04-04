@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight } from 'lucide-react';
@@ -60,11 +59,6 @@ const Navbar = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   
-  // Debug logs
-  useEffect(() => {
-    console.log("Navbar auth state:", { user: !!user, profile: profile?.role, isLoading });
-  }, [user, profile, isLoading]);
-  
   const handleLogout = async () => {
     await signOut();
     navigate('/login');
@@ -82,7 +76,7 @@ const Navbar = () => {
           <div className="bus-gradient-bg rounded-full p-2">
             <BusFront className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl">Campus Bus Beacon</span>
+          <span className="font-bold text-xl">CampusPro</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-1">

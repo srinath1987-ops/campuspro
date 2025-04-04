@@ -1,146 +1,161 @@
 
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4'
+// HTTP Bus Entry/Exit Function
+// This function handles bus entry and exit events from the ESP32 controllers
 
-// Set up CORS headers for the function
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.1'
+
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Create a Supabase client
-const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-const supabase = createClient(supabaseUrl, supabaseKey)
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Get Supabase credentials from environment variables
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Missing Supabase credentials')
+    }
+
+    // Create Supabase client with service role key for admin privileges
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
     // Parse request body
-    const { rfid_id, event_type } = await req.json()
-    console.log(`Processing ${event_type} event for RFID: ${rfid_id}`)
-    
+    const body = await req.json()
+    const { rfid_id, event_type } = body
+
+    // Validate required fields
     if (!rfid_id || !event_type) {
-      throw new Error('Missing required parameters: rfid_id or event_type')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Missing required fields: rfid_id and event_type are required' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
     }
-    
-    // Validate event_type
+
     if (event_type !== 'entry' && event_type !== 'exit') {
-      throw new Error('Invalid event_type. Must be "entry" or "exit"')
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: 'Invalid event_type: must be either "entry" or "exit"' 
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 400,
+        }
+      )
     }
-    
-    // Get current timestamp
+
+    console.log(`Processing ${event_type} event for RFID: ${rfid_id}`)
+
+    // Call the database function to update bus status
+    const { data, error } = await supabase.rpc('update_bus_status', {
+      rfid_id,
+      event_type,
+    })
+
+    if (error) {
+      console.error('Error updating bus status:', error)
+      throw error
+    }
+
+    // Also log the entry/exit to the bus_times table for historical tracking
     const now = new Date()
-    const currentTime = now.toISOString()
-    const currentDate = now.toISOString().split('T')[0]
+    const today = now.toISOString().split('T')[0]
     
-    // Find the bus with this RFID
+    // Get the bus_number from rfid_id
     const { data: busData, error: busError } = await supabase
       .from('bus_details')
-      .select('*')
+      .select('bus_number')
       .eq('rfid_id', rfid_id)
       .single()
-    
+      
     if (busError) {
-      throw new Error(`Bus not found with RFID: ${rfid_id}`)
+      console.error('Error fetching bus details:', busError)
+      throw busError
     }
     
-    // Update bus status based on event type
+    if (!busData) {
+      throw new Error('Bus not found with provided RFID')
+    }
+    
+    // Insert entry in bus_times table
     if (event_type === 'entry') {
-      // Entry Event - Update bus_details
-      const { error: updateError } = await supabase
-        .from('bus_details')
-        .update({ 
-          in_campus: true,
-          in_time: currentTime
-        })
-        .eq('rfid_id', rfid_id)
-      
-      if (updateError) {
-        throw new Error(`Failed to update bus status: ${updateError.message}`)
-      }
-      
-      // Record entry in bus_times table
-      const { error: entryError } = await supabase
+      await supabase
         .from('bus_times')
-        .insert({
+        .upsert({
+          rfid_id,
           bus_number: busData.bus_number,
-          rfid_id: rfid_id,
-          in_time: currentTime,
-          date_in: currentDate
-        })
-      
-      if (entryError) {
-        console.error(`Warning: Failed to record entry time: ${entryError.message}`)
-        // Continue execution even if this fails
-      }
+          in_time: now.toISOString(),
+          date_in: today,
+        }, { onConflict: 'bus_number,date_in' })
     } else {
-      // Exit Event - Update bus_details
-      const { error: updateError } = await supabase
-        .from('bus_details')
-        .update({ 
-          in_campus: false,
-          out_time: currentTime
-        })
-        .eq('rfid_id', rfid_id)
-      
-      if (updateError) {
-        throw new Error(`Failed to update bus status: ${updateError.message}`)
-      }
-      
-      // Find the latest entry record for this bus and update it with exit time
-      const { data: timeData, error: timeError } = await supabase
+      // For exit, update the existing record
+      const { data: entryData } = await supabase
         .from('bus_times')
-        .select('*')
-        .eq('rfid_id', rfid_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-      
-      if (!timeError && timeData) {
-        // Update the record with exit time
-        const { error: exitError } = await supabase
-          .from('bus_times')
-          .update({ 
-            out_time: currentTime,
-            date_out: currentDate
-          })
-          .eq('id', timeData.id)
+        .select('id')
+        .eq('bus_number', busData.bus_number)
+        .eq('date_in', today)
+        .maybeSingle()
         
-        if (exitError) {
-          console.error(`Warning: Failed to record exit time: ${exitError.message}`)
-          // Continue execution even if this fails
-        }
+      if (entryData?.id) {
+        await supabase
+          .from('bus_times')
+          .update({
+            out_time: now.toISOString(),
+            date_out: today,
+          })
+          .eq('id', entryData.id)
+      } else {
+        // If no entry record found, create a new one
+        await supabase
+          .from('bus_times')
+          .insert({
+            rfid_id,
+            bus_number: busData.bus_number,
+            out_time: now.toISOString(),
+            date_out: today,
+          })
       }
     }
-    
-    // Return success response
-    const responseBody = {
-      success: true,
-      message: `Bus ${busData.bus_number} ${event_type === 'entry' ? 'entered' : 'exited'} successfully`,
-      timestamp: currentTime,
-      bus_number: busData.bus_number
-    }
-    
-    return new Response(JSON.stringify(responseBody), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 200
-    })
-    
+
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        event_type,
+        message: `Bus ${event_type} processed successfully` 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 200,
+      }
+    )
   } catch (error) {
-    // Log and return error
-    console.error(`Error processing request:`, error.message)
+    console.error('Error in bus entry/exit function:', error)
     
-    return new Response(JSON.stringify({
-      success: false,
-      error: error.message
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      status: 400
-    })
+    return new Response(
+      JSON.stringify({ 
+        success: false, 
+        error: error.message 
+      }),
+      { 
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 500,
+      }
+    )
   }
 })
