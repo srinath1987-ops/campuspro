@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import {
-Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2,
+import { Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2,
   ChevronDown, ChevronUp, Loader
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -676,3 +675,13 @@ const Buses = () => {
 
               <div className="flex justify-end pt-2">
                 <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+    </DashboardLayout>
+  );
+};
+
+export default Buses;
