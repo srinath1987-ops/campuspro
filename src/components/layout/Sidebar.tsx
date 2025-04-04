@@ -45,6 +45,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath, role }: SidebarProp
         { icon: Settings, label: 'Settings', href: '/driver/settings' },
       ];
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <aside 
       className={cn(
@@ -55,10 +59,13 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath, role }: SidebarProp
       )}
     >
       {/* Logo */}
-      <div className={cn(
-        "flex items-center h-16 px-4 border-b border-gray-800",
-        !sidebarOpen && "md:justify-center"
-      )}>
+      <div 
+        className={cn(
+          "flex items-center h-16 px-4 border-b border-gray-800 cursor-pointer",
+          !sidebarOpen && "md:justify-center"
+        )}
+        onClick={handleLogoClick}
+      >
         <div className="bus-gradient-bg rounded-full p-2 flex-shrink-0">
           <BusFront className="h-5 w-5 text-white" />
         </div>
@@ -69,7 +76,10 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, currentPath, role }: SidebarProp
           variant="ghost" 
           size="icon" 
           className="ml-auto md:hidden text-white"
-          onClick={() => setSidebarOpen(false)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSidebarOpen(false);
+          }}
         >
           <X className="h-5 w-5" />
         </Button>
