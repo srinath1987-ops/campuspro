@@ -19,14 +19,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   
   useEffect(() => {
-    console.log("ProtectedRoute - Auth state:", {
-      isLoading,
-      hasUser: !!user,
-      role: profile?.role,
-      requiredRole: allowedRole,
-      path: location.pathname
-    });
-    
+    // Only show toast messages, no console logs for security
     if (!isLoading && !user) {
       toast({
         title: "Authentication required",

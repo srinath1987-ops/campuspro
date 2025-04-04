@@ -232,6 +232,13 @@ export type Database = {
         }
         Returns: string
       }
+      update_bus_status: {
+        Args: {
+          rfid_id: string
+          event_type: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "driver"

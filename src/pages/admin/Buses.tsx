@@ -1,10 +1,16 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Plus, MapPin, Clock, Truck, User, Phone, Calendar } from 'lucide-react';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2
+} from 'lucide-react';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useOutsideClick } from '@/hooks/use-outside-click';
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +18,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 
 // Define Bus and Route types
 type Bus = {
@@ -34,78 +39,216 @@ type BusRoute = {
   rfid_id: string | null;
 };
 
+type BusStopInput = {
+  time: string;
+  location: string;
+};
+
 const Buses = () => {
-  const navigate = useNavigate();
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<Record<string, BusRoute>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
   const [selectedRoute, setSelectedRoute] = useState<BusRoute | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isAddFormVisible, setIsAddFormVisible] = useState(false);
   const { toast } = useToast();
   
-  useEffect(() => {
-    const fetchBusesAndRoutes = async () => {
-      setIsLoading(true);
-      try {
-        // Fetch buses
-        const { data: busesData, error: busesError } = await supabase
-          .from('bus_details')
-          .select('*');
-          
-        if (busesError) throw busesError;
-        
-        // Fetch routes
-        const { data: routesData, error: routesError } = await supabase
-          .from('bus_routes')
-          .select('*');
-          
-        if (routesError) throw routesError;
-        
-        // Process the data
-        setBuses(busesData || []);
-        
-        // Create a map of bus_number to route details
-        const routesMap: Record<string, BusRoute> = {};
-        routesData?.forEach(route => {
-          if (route.bus_number) {
-            // Convert the stops data to the correct format using our helper function
-            const parsedStops = safeParseStops(route.stops);
-            routesMap[route.bus_number] = {
-              id: route.id,
-              route_no: route.route_no,
-              bus_number: route.bus_number,
-              stops: parsedStops,
-              via: route.via,
-              rfid_id: route.rfid_id
-            };
-          }
-        });
-        
-        setRoutes(routesMap);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to load buses. Please try again.',
-          variant: 'destructive',
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    fetchBusesAndRoutes();
-  }, [toast]);
+  // New bus form state
+  const [newBus, setNewBus] = useState({
+    bus_number: '',
+    rfid_id: '',
+    bus_capacity: '',
+    start_point: '',
+    driver_name: '',
+    driver_phone: ''
+  });
   
-  const handleAddBus = () => {
-    navigate('/admin/buses/add');
+  // Route form state
+  const [newRoute, setNewRoute] = useState({
+    route_no: '',
+    via: '',
+    stops: [] as BusStopInput[]
+  });
+  
+  const formRef = useRef<HTMLDivElement>(null);
+  
+  // Use the hook to close form when clicking outside
+  useOutsideClick(formRef, () => {
+    if (isAddFormVisible) {
+      setIsAddFormVisible(false);
+    }
+  });
+  
+  useEffect(() => {
+    fetchBusesAndRoutes();
+  }, []);
+  
+  const fetchBusesAndRoutes = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch buses
+      const { data: busesData, error: busesError } = await supabase
+        .from('bus_details')
+        .select('*');
+        
+      if (busesError) throw busesError;
+      
+      // Fetch routes
+      const { data: routesData, error: routesError } = await supabase
+        .from('bus_routes')
+        .select('*');
+        
+      if (routesError) throw routesError;
+      
+      // Process the data
+      setBuses(busesData || []);
+      
+      // Create a map of bus_number to route details
+      const routesMap: Record<string, BusRoute> = {};
+      routesData?.forEach(route => {
+        if (route.bus_number) {
+          // Convert the stops data to the correct format using our helper function
+          const parsedStops = safeParseStops(route.stops);
+          routesMap[route.bus_number] = {
+            id: route.id,
+            route_no: route.route_no,
+            bus_number: route.bus_number,
+            stops: parsedStops,
+            via: route.via,
+            rfid_id: route.rfid_id
+          };
+        }
+      });
+      
+      setRoutes(routesMap);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load buses. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
-
+  
   const handleViewBus = (bus: Bus) => {
     setSelectedBus(bus);
     setSelectedRoute(routes[bus.bus_number] || null);
     setIsDialogOpen(true);
+  };
+
+  const handleAddBus = () => {
+    setIsAddFormVisible(true);
+  };
+  
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewBus(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleRouteChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setNewRoute(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const addStop = () => {
+    setNewRoute(prev => ({
+      ...prev,
+      stops: [...prev.stops, { time: '', location: '' }]
+    }));
+  };
+  
+  const removeStop = (index: number) => {
+    setNewRoute(prev => ({
+      ...prev,
+      stops: prev.stops.filter((_, i) => i !== index)
+    }));
+  };
+  
+  const updateStop = (index: number, field: 'time' | 'location', value: string) => {
+    setNewRoute(prev => {
+      const newStops = [...prev.stops];
+      newStops[index] = {
+        ...newStops[index],
+        [field]: value
+      };
+      return {
+        ...prev,
+        stops: newStops
+      };
+    });
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    try {
+      // First, add the bus details
+      const { data: busData, error: busError } = await supabase
+        .from('bus_details')
+        .insert([{
+          bus_number: newBus.bus_number,
+          rfid_id: newBus.rfid_id,
+          bus_capacity: parseInt(newBus.bus_capacity) || 0,
+          start_point: newBus.start_point,
+          driver_name: newBus.driver_name || '',
+          driver_phone: newBus.driver_phone || '',
+          in_campus: false
+        }])
+        .select();
+      
+      if (busError) throw busError;
+      
+      // Then, add the route if we have stop information
+      if (newRoute.route_no && newRoute.stops.length > 0) {
+        const { error: routeError } = await supabase
+          .from('bus_routes')
+          .insert([{
+            route_no: newRoute.route_no,
+            bus_number: newBus.bus_number,
+            rfid_id: newBus.rfid_id,
+            via: newRoute.via || null,
+            stops: newRoute.stops
+          }]);
+        
+        if (routeError) throw routeError;
+      }
+      
+      toast({
+        title: 'Success',
+        description: `Bus ${newBus.bus_number} has been added successfully.`,
+      });
+      
+      // Reset form and fetch updated data
+      setNewBus({
+        bus_number: '',
+        rfid_id: '',
+        bus_capacity: '',
+        start_point: '',
+        driver_name: '',
+        driver_phone: ''
+      });
+      setNewRoute({
+        route_no: '',
+        via: '',
+        stops: []
+      });
+      setIsAddFormVisible(false);
+      fetchBusesAndRoutes();
+    } catch (error: any) {
+      console.error('Error adding bus:', error);
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add bus. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Helper function to safely parse stops
@@ -138,6 +281,201 @@ const Buses = () => {
             <Plus className="h-4 w-4 mr-2" /> Add New Bus
           </Button>
         </div>
+
+        {/* Add Bus Form - Expandable Card */}
+        {isAddFormVisible && (
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+            <div 
+              ref={formRef} 
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-bold">Add New Bus</h2>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setIsAddFormVisible(false)}
+                    className="h-8 w-8"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                
+                <form onSubmit={handleSubmit} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Bus Number<span className="text-red-500">*</span></label>
+                      <Input 
+                        type="text" 
+                        name="bus_number" 
+                        value={newBus.bus_number} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. B001" 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">RFID ID<span className="text-red-500">*</span></label>
+                      <Input 
+                        type="text" 
+                        name="rfid_id" 
+                        value={newBus.rfid_id} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. RFID12345" 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Bus Capacity<span className="text-red-500">*</span></label>
+                      <Input 
+                        type="number" 
+                        name="bus_capacity" 
+                        value={newBus.bus_capacity} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. 50" 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Start Point<span className="text-red-500">*</span></label>
+                      <Input 
+                        type="text" 
+                        name="start_point" 
+                        value={newBus.start_point} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. City Center" 
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Driver Name</label>
+                      <Input 
+                        type="text" 
+                        name="driver_name" 
+                        value={newBus.driver_name} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. John Doe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Driver Phone</label>
+                      <Input 
+                        type="tel" 
+                        name="driver_phone" 
+                        value={newBus.driver_phone} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. +1234567890"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="border-t border-gray-200 pt-4">
+                    <h3 className="text-lg font-medium mb-3">Route Information</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Route Number</label>
+                        <Input 
+                          type="text" 
+                          name="route_no" 
+                          value={newRoute.route_no} 
+                          onChange={handleRouteChange}
+                          placeholder="e.g. R001"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium mb-1">Via</label>
+                        <Input 
+                          type="text" 
+                          name="via" 
+                          value={newRoute.via || ''} 
+                          onChange={handleRouteChange}
+                          placeholder="e.g. Downtown, Suburbs"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="mt-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <label className="block text-sm font-medium">Route Stops</label>
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          onClick={addStop}
+                          className="h-8 px-2"
+                        >
+                          <Plus className="h-3 w-3 mr-1" /> Add Stop
+                        </Button>
+                      </div>
+                      
+                      {newRoute.stops.length === 0 ? (
+                        <p className="text-sm text-gray-500 py-2">No stops added. Click 'Add Stop' to add stops to this route.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {newRoute.stops.map((stop, index) => (
+                            <div key={index} className="flex items-center gap-2">
+                              <div className="flex-1">
+                                <Input 
+                                  type="text" 
+                                  value={stop.time} 
+                                  onChange={(e) => updateStop(index, 'time', e.target.value)}
+                                  placeholder="Time (e.g. 08:30 AM)" 
+                                  className="mb-1"
+                                />
+                                <Input 
+                                  type="text" 
+                                  value={stop.location} 
+                                  onChange={(e) => updateStop(index, 'location', e.target.value)}
+                                  placeholder="Location (e.g. Market Street)" 
+                                />
+                              </div>
+                              <Button 
+                                type="button" 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => removeStop(index)}
+                                className="h-8 w-8 text-red-500"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="flex justify-end pt-4 gap-2">
+                    <Button 
+                      type="button" 
+                      variant="outline"
+                      onClick={() => setIsAddFormVisible(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      type="submit" 
+                      className="bus-gradient-bg"
+                      disabled={isLoading}
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin h-4 w-4 mr-2 border-2 border-white border-t-transparent rounded-full"></div>
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="h-4 w-4 mr-2" /> Save Bus
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Buses List */}
         <div className="bg-white rounded-lg shadow">
@@ -179,14 +517,14 @@ const Buses = () => {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {buses.map((bus) => (
-                    <tr key={bus.rfid_id}>
+                    <tr key={bus.rfid_id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="font-medium text-gray-900">{bus.bus_number}</div>
                         <div className="text-sm text-gray-500">RFID: {bus.rfid_id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{bus.driver_name}</div>
-                        <div className="text-sm text-gray-500">{bus.driver_phone}</div>
+                        <div className="text-sm text-gray-900">{bus.driver_name || 'Not assigned'}</div>
+                        <div className="text-sm text-gray-500">{bus.driver_phone || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {bus.bus_capacity} seats
@@ -209,7 +547,11 @@ const Buses = () => {
                         >
                           View
                         </Button>
-                        <Button variant="ghost" size="sm" className="text-indigo-600 hover:text-indigo-900">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
                           Edit
                         </Button>
                       </td>
@@ -268,13 +610,13 @@ const Buses = () => {
                   <div className="space-y-2">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Driver Name</span>
-                      <span className="font-medium">{selectedBus.driver_name}</span>
+                      <span className="font-medium">{selectedBus.driver_name || 'Not assigned'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Contact</span>
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 mr-1 text-muted-foreground" />
-                        <span className="font-medium">{selectedBus.driver_phone}</span>
+                        <span className="font-medium">{selectedBus.driver_phone || 'Not available'}</span>
                       </div>
                     </div>
                   </div>
