@@ -48,8 +48,8 @@ const busFormSchema = z.object({
   bus_capacity: z.coerce.number().min(1, { message: "Bus capacity must be at least 1" }),
   rfid_id: z.string().min(2, { message: "RFID ID is required" }),
   driver_id: z.string().optional(),
-  driver_name: z.string().optional(), // Making driver_name optional
-  driver_phone: z.string().optional(), // Making driver_phone optional
+  driver_name: z.string().min(2, { message: "Driver name is required" }),
+  driver_phone: z.string().min(5, { message: "Driver phone is required" }),
   start_point: z.string().min(2, { message: "Start point is required" }),
   via: z.string().optional(),
   stops: z.array(
@@ -131,13 +131,6 @@ const AddBus = () => {
 
   // Handle driver selection
   const handleDriverChange = (driverId: string) => {
-    if (!driverId) {
-      // If no driver is selected, clear the driver fields
-      form.setValue("driver_name", "");
-      form.setValue("driver_phone", "");
-      return;
-    }
-    
     const selectedDriver = drivers.find(driver => driver.id === driverId);
     if (selectedDriver) {
       form.setValue("driver_name", selectedDriver.username);
@@ -151,19 +144,15 @@ const AddBus = () => {
     try {
       console.log("Submitting bus form:", values);
       
-      // Set default values for driver_name and driver_phone if not provided
-      const driverName = values.driver_name || "Not Assigned";
-      const driverPhone = values.driver_phone || "Not Available";
-      
       // Insert into bus_details table
       const { data: busData, error: busError } = await supabase
         .from('bus_details')
         .insert({
           bus_number: values.bus_number,
-          bus_capacity: values.bus_capacity,
+          bus_capacity: values.bus_capacity, // This is now correctly a number
           rfid_id: values.rfid_id,
-          driver_name: driverName,
-          driver_phone: driverPhone,
+          driver_name: values.driver_name,
+          driver_phone: values.driver_phone,
           start_point: values.start_point,
           in_campus: false,
         });
@@ -174,7 +163,7 @@ const AddBus = () => {
       const { data: routeData, error: routeError } = await supabase
         .from('bus_routes')
         .insert({
-          route_no: values.bus_number,
+          route_no: values.bus_number, // Using bus number as route number
           bus_number: values.bus_number,
           rfid_id: values.rfid_id,
           via: values.via || null,
@@ -220,7 +209,7 @@ const AddBus = () => {
           <CardHeader>
             <CardTitle className="text-2xl font-bold">Add New Bus</CardTitle>
             <CardDescription>
-              Enter the details for the new bus. All fields except Via and Driver details are required.
+              Enter the details for the new bus. All fields except Via are required.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -276,7 +265,7 @@ const AddBus = () => {
                   
                   {/* Driver Details Section */}
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Driver Details (Optional)</h3>
+                    <h3 className="text-lg font-medium">Driver Details</h3>
                     
                     <FormField
                       control={form.control}
@@ -307,8 +296,35 @@ const AddBus = () => {
                           </Select>
                           <FormDescription>
                             Selecting a driver will fill in the name and phone automatically.
-                            If no driver is selected, "Not Assigned" will be used.
                           </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="driver_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Driver Name*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., John Doe" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    
+                    <FormField
+                      control={form.control}
+                      name="driver_phone"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Driver Phone*</FormLabel>
+                          <FormControl>
+                            <Input placeholder="e.g., 555-123-4567" {...field} />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}

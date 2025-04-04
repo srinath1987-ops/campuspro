@@ -1,8 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2,
-  ChevronDown, ChevronUp, Loader
+  Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,8 +23,8 @@ import {
 type Bus = {
   rfid_id: string;
   bus_number: string;
-  driver_name: string | null;
-  driver_phone: string | null;
+  driver_name: string;
+  driver_phone: string;
   bus_capacity: number;
   in_campus: boolean;
   start_point: string;
@@ -61,6 +60,8 @@ const Buses = () => {
     rfid_id: '',
     bus_capacity: '',
     start_point: '',
+    driver_name: '',
+    driver_phone: ''
   });
   
   // Route form state
@@ -81,29 +82,6 @@ const Buses = () => {
   
   useEffect(() => {
     fetchBusesAndRoutes();
-    
-    // Set up a realtime subscription to bus_details and bus_routes
-    const busesChannel = supabase
-      .channel('buses-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bus_details' },
-        () => {
-          fetchBusesAndRoutes();
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'bus_routes' },
-        () => {
-          fetchBusesAndRoutes();
-        }
-      )
-      .subscribe();
-    
-    return () => {
-      supabase.removeChannel(busesChannel);
-    };
   }, []);
   
   const fetchBusesAndRoutes = async () => {
@@ -217,8 +195,8 @@ const Buses = () => {
           rfid_id: newBus.rfid_id,
           bus_capacity: parseInt(newBus.bus_capacity) || 0,
           start_point: newBus.start_point,
-          driver_name: null,  // Set to null as requested
-          driver_phone: null, // Set to null as requested
+          driver_name: newBus.driver_name || '',
+          driver_phone: newBus.driver_phone || '',
           in_campus: false
         }])
         .select();
@@ -251,6 +229,8 @@ const Buses = () => {
         rfid_id: '',
         bus_capacity: '',
         start_point: '',
+        driver_name: '',
+        driver_phone: ''
       });
       setNewRoute({
         route_no: '',
@@ -366,6 +346,26 @@ const Buses = () => {
                         onChange={handleFormChange}
                         placeholder="e.g. City Center" 
                         required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Driver Name</label>
+                      <Input 
+                        type="text" 
+                        name="driver_name" 
+                        value={newBus.driver_name} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. John Doe"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Driver Phone</label>
+                      <Input 
+                        type="tel" 
+                        name="driver_phone" 
+                        value={newBus.driver_phone} 
+                        onChange={handleFormChange}
+                        placeholder="e.g. +1234567890"
                       />
                     </div>
                   </div>
@@ -523,7 +523,7 @@ const Buses = () => {
                         <div className="text-sm text-gray-500">RFID: {bus.rfid_id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{bus.driver_name || 'Not yet assigned'}</div>
+                        <div className="text-sm text-gray-900">{bus.driver_name || 'Not assigned'}</div>
                         <div className="text-sm text-gray-500">{bus.driver_phone || '-'}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -547,6 +547,13 @@ const Buses = () => {
                         >
                           View
                         </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-indigo-600 hover:text-indigo-900"
+                        >
+                          Edit
+                        </Button>
                       </td>
                     </tr>
                   ))}
@@ -557,9 +564,9 @@ const Buses = () => {
         </div>
       </div>
 
-      {/* Bus Details Dialog - Updated for better responsiveness */}
+      {/* Bus Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] overflow-auto">
+        <DialogContent className="sm:max-w-3xl">
           {selectedBus && (
             <>
               <DialogHeader>
@@ -603,7 +610,7 @@ const Buses = () => {
                   <div className="space-y-2">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Driver Name</span>
-                      <span className="font-medium">{selectedBus.driver_name || 'Not yet assigned'}</span>
+                      <span className="font-medium">{selectedBus.driver_name || 'Not assigned'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Contact</span>
@@ -640,7 +647,7 @@ const Buses = () => {
                       
                       <div className="mt-4">
                         <span className="text-sm text-muted-foreground">Stops</span>
-                        <div className="relative mt-2 max-h-[300px] overflow-y-auto pr-2">
+                        <div className="relative mt-2">
                           <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
                           <div className="space-y-4">
                             {safeParseStops(selectedRoute.stops).map((stop, idx) => (
@@ -673,10 +680,6 @@ const Buses = () => {
                     </div>
                   )}
                 </div>
-              </div>
-
-              <div className="flex justify-end pt-2">
-                <Button onClick={() => setIsDialogOpen(false)}>Close</Button>
               </div>
             </>
           )}

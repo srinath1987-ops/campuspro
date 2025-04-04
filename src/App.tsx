@@ -28,7 +28,6 @@ const queryClient = new QueryClient({
     queries: {
       retry: 1,
       refetchOnWindowFocus: false,
-      staleTime: 60000, // 1 minute caching to reduce frequent refetches
     },
   },
 });
