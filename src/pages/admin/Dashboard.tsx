@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -40,7 +39,9 @@ import {
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { fetchBuses } from '@/redux/slices/busSlice';
+import { fetchStudentCounts } from '@/redux/slices/busSlice';
 
 // Stat Card Component
 const StatCard = ({ 
@@ -114,10 +115,9 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
-  const [isLoading, setIsLoading] = useState(true);
-  const [buses, setBuses] = useState<any[]>([]);
-  const [dailyData, setDailyData] = useState<any[]>([]);
-  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  const dispatch = useAppDispatch();
+  const { buses, studentCounts, isLoading, error } = useAppSelector(state => state.buses);
+  
   const [selectedYear, setSelectedYear] = useState<string>(getCurrentYearMonth().year.toString());
   const [selectedMonth, setSelectedMonth] = useState<string>(getCurrentYearMonth().month.toString());
   
@@ -152,108 +152,56 @@ const Dashboard = () => {
     }
     
     // Fetch data
-    fetchData();
-  }, [user, profile, navigate, toast, selectedYear, selectedMonth]);
+    dispatch(fetchBuses());
+    dispatch(fetchStudentCounts({ year: selectedYear, month: selectedMonth }));
+  }, [dispatch, user, profile, navigate, toast, selectedYear, selectedMonth]);
 
-  const fetchData = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch buses
-      const { data: busesData, error: busesError } = await supabase
-        .from('bus_details')
-        .select('*');
-      
-      if (busesError) throw busesError;
-      
-      // Fetch the latest student count for each bus
-      const busesWithCount = await Promise.all((busesData || []).map(async (bus) => {
-        const { data: countData, error: countError } = await supabase
-          .from('bus_student_count')
-          .select('*')
-          .eq('bus_number', bus.bus_number)
-          .order('date', { ascending: false })
-          .limit(1);
-          
-        if (countError) {
-          console.error('Error fetching count:', countError);
-          return { ...bus, student_count: 0 };
-        }
-        
-        return { 
-          ...bus, 
-          student_count: countData && countData.length > 0 ? countData[0].student_count : 0 
-        };
-      }));
-      
-      setBuses(busesWithCount);
-      
-      // Fetch daily data for the selected month and year
-      const startOfMonth = `${selectedYear}-${selectedMonth.padStart(2, '0')}-01`;
-      const endOfMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth), 0).toISOString().split('T')[0];
-      
-      const { data: dailyCountData, error: dailyCountError } = await supabase
-        .from('bus_student_count')
-        .select('date, student_count')
-        .gte('date', startOfMonth)
-        .lte('date', endOfMonth)
-        .order('date', { ascending: true });
-        
-      if (dailyCountError) throw dailyCountError;
-      
-      // Process daily data for chart
-      const dailyCounts: Record<string, number> = {};
-      (dailyCountData || []).forEach(entry => {
-        const day = entry.date.split('-')[2]; // Extract day from date
-        dailyCounts[day] = (dailyCounts[day] || 0) + entry.student_count;
-      });
-      
-      const processedDailyData = Object.entries(dailyCounts).map(([day, count]) => ({
-        day,
-        count
-      })).sort((a, b) => parseInt(a.day) - parseInt(b.day));
-      
-      setDailyData(processedDailyData);
-      
-      // Fetch monthly data for the selected year
-      const { data: monthlyCountData, error: monthlyCountError } = await supabase
-        .from('bus_student_count')
-        .select('date, student_count')
-        .ilike('date', `${selectedYear}-%`)
-        .order('date', { ascending: true });
-        
-      if (monthlyCountError) throw monthlyCountError;
-      
-      // Process monthly data for chart
-      const monthlyCounts: Record<string, number> = {};
-      (monthlyCountData || []).forEach(entry => {
-        const month = entry.date.split('-')[1]; // Extract month from date
-        monthlyCounts[month] = (monthlyCounts[month] || 0) + entry.student_count;
-      });
-      
-      const processedMonthlyData = Object.entries(monthlyCounts).map(([month, count]) => ({
-        month: getMonthName(parseInt(month)),
-        count
-      })).sort((a, b) => {
-        const months = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
-        ];
-        return months.indexOf(a.month) - months.indexOf(b.month);
-      });
-      
-      setMonthlyData(processedMonthlyData);
-      
-    } catch (error) {
-      console.error('Error fetching data:', error);
+  // Show error if there's one
+  useEffect(() => {
+    if (error) {
       toast({
         title: 'Error',
-        description: 'Failed to fetch dashboard data.',
+        description: error,
         variant: 'destructive'
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
+  }, [error, toast]);
+
+  // Process daily data for chart
+  const dailyData = React.useMemo(() => {
+    const dailyCounts: Record<string, number> = {};
+    
+    studentCounts.forEach(entry => {
+      const day = entry.date.split('-')[2]; // Extract day from date
+      dailyCounts[day] = (dailyCounts[day] || 0) + entry.student_count;
+    });
+    
+    return Object.entries(dailyCounts).map(([day, count]) => ({
+      day,
+      count
+    })).sort((a, b) => parseInt(a.day) - parseInt(b.day));
+  }, [studentCounts]);
+  
+  // Process monthly data for chart
+  const monthlyData = React.useMemo(() => {
+    const monthlyCounts: Record<string, number> = {};
+    
+    studentCounts.forEach(entry => {
+      const month = entry.date.split('-')[1]; // Extract month from date
+      monthlyCounts[month] = (monthlyCounts[month] || 0) + entry.student_count;
+    });
+    
+    return Object.entries(monthlyCounts).map(([month, count]) => ({
+      month: getMonthName(parseInt(month)),
+      count
+    })).sort((a, b) => {
+      const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+      ];
+      return months.indexOf(a.month) - months.indexOf(b.month);
+    });
+  }, [studentCounts]);
 
   // Format date for display
   const formatDateForDisplay = (dateString: string | null) => {

@@ -52,7 +52,7 @@ const About = () => {
         <div className="container mx-auto px-4">
           <div className="max-w-3xl mx-auto text-center">
             <h1 className="text-3xl md:text-4xl font-bold mb-4 bus-gradient-text">
-              About Campus Bus Beacon
+              About CampusPro
             </h1>
             <p className="text-xl text-gray-600 mb-6">
               Learn about our mission to revolutionize campus transportation management with IoT technology
@@ -72,7 +72,7 @@ const About = () => {
             
             <div className="text-lg text-gray-700 space-y-6">
               <p>
-                At Campus Bus Beacon, our mission is to transform campus transportation management through innovative IoT technology. We believe that efficient, transparent, and data-driven bus operations can significantly improve the campus experience for students, staff, and administrators.
+                At CampusPro, our mission is to transform campus transportation management through innovative IoT technology. We believe that efficient, transparent, and data-driven bus operations can significantly improve the campus experience for students, staff, and administrators.
               </p>
               <p>
                 Our system was born out of the need to address common challenges in campus transportation: tracking bus locations, managing fleet operations, and collecting accurate ridership data. By integrating RFID technology with cloud-based infrastructure, we've created a comprehensive solution that provides real-time insights and streamlines daily operations.
@@ -136,7 +136,7 @@ const About = () => {
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4">Our Team</h2>
             <p className="text-gray-600 max-w-2xl mx-auto">
-              Meet the talented individuals behind Campus Bus Beacon
+              Meet the talented individuals behind CampusPro
             </p>
           </div>
           

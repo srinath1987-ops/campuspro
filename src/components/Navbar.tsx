@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight } from 'lucide-react';
@@ -82,7 +81,7 @@ const Navbar = () => {
           <div className="bus-gradient-bg rounded-full p-2">
             <BusFront className="h-5 w-5 text-white" />
           </div>
-          <span className="font-bold text-xl">Campus Bus Beacon</span>
+          <span className="font-bold text-xl">CampusPro</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-1">
@@ -90,6 +89,12 @@ const Navbar = () => {
           <NavItem to="/about" icon={Info}>About</NavItem>
           <NavItem to="/features" icon={PanelRight}>Features</NavItem>
           <NavItem to="/bus-points" icon={MapPin}>Bus Points</NavItem>
+          <Link
+            to="/feedback"
+            className="ml-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary"
+          >
+            Feedback
+          </Link>
           
           {user ? (
             <>
@@ -140,6 +145,8 @@ const Navbar = () => {
               </NavItem>
             </>
           )}
+          
+          
         </div>
         
         {/* Mobile Menu Button */}

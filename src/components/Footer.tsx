@@ -11,7 +11,7 @@ const Footer = () => {
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="font-bold text-xl mb-4">Campus Bus Beacon</h3>
+            <h3 className="font-bold text-xl mb-4">CampusPro</h3>
             <p className="text-gray-300 mb-4">
               Smart bus tracking and management system for modern campuses.
             </p>
@@ -73,7 +73,7 @@ const Footer = () => {
         </div>
         
         <div className="border-t border-gray-700 mt-8 pt-6 text-center text-gray-400">
-          <p>&copy; {currentYear} Campus Bus Beacon. All rights reserved.</p>
+          <p>&copy; {currentYear} CampusPro. All rights reserved.</p>
         </div>
       </div>
     </footer>

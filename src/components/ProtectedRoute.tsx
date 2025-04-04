@@ -1,42 +1,66 @@
-
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppSelector, useAppDispatch } from '@/redux/hooks';
+import { fetchSession } from '@/redux/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRole?: 'admin' | 'driver' | undefined;
+  allowedRole?: 'admin' | 'driver' | 'user' | undefined;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
   children, 
   allowedRole 
 }) => {
-  const { user, profile, isLoading } = useAuth();
+  // Use Redux state instead of auth context
+  const { user, profile, isLoading } = useAppSelector(state => state.auth);
+  const dispatch = useAppDispatch();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
+  const [initializing, setInitializing] = useState(true);
+  
+  // Try to refresh session on mount or when route changes
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!user) {
+        try {
+          await dispatch(fetchSession()).unwrap();
+        } catch (err) {
+          // Session fetch failed, will be handled by the render logic
+        } finally {
+          setInitializing(false);
+        }
+      } else {
+        setInitializing(false);
+      }
+    };
+    
+    checkSession();
+  }, [dispatch, user, location.pathname]);
   
   useEffect(() => {
-    // Only show toast messages, no console logs for security
-    if (!isLoading && !user) {
+    // Only show toast messages when we've confirmed the user is not authenticated
+    // and after the initial session check
+    if (!isLoading && !initializing && !user) {
       toast({
         title: "Authentication required",
         description: "Please log in to access this page.",
         variant: "destructive"
       });
-    } else if (!isLoading && user && allowedRole && profile?.role !== allowedRole) {
+    } else if (!isLoading && !initializing && user && allowedRole && profile?.role !== allowedRole) {
       toast({
         title: "Access restricted",
         description: `This page is only accessible to ${allowedRole}s.`,
         variant: "destructive"
       });
     }
-  }, [isLoading, user, toast, allowedRole, profile, location.pathname]);
+  }, [isLoading, initializing, user, toast, allowedRole, profile, location.pathname]);
 
   // Show loading indicator while auth state is initializing
-  if (isLoading) {
+  if (isLoading || initializing) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>

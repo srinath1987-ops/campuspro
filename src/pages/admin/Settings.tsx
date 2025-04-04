@@ -1,14 +1,13 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import DashboardLayout from '@/components/DashboardLayout';
+import { useTheme } from '@/components/theme-provider';
 
 const Settings = () => {
-  // In a real app, this would be persisted to localStorage or a backend service
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+  const { theme, setTheme } = useTheme();
 
   return (
     <DashboardLayout title="Settings" role="admin" currentPath="/admin/settings">
@@ -20,7 +19,7 @@ const Settings = () => {
               Customize how the application looks on your device.
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent>
             <div className="space-y-4">
               <div>
                 <h3 className="text-lg font-medium">Theme</h3>

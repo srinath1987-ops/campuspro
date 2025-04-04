@@ -1,6 +1,5 @@
-
-import React, { useState } from 'react';
-import { User, Lock, Phone, AtSign, Save } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { User, Lock, Phone, AtSign, Save, Upload } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -31,17 +30,29 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import DashboardLayout from '@/components/DashboardLayout';
+import { supabase } from '@/integrations/supabase/client';
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const Profile = () => {
   const { profile, updateProfile, updatePassword } = useAuth();
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [username, setUsername] = useState(profile?.username || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url || null);
+
+  useEffect(() => {
+    if (profile) {
+      setUsername(profile.username || '');
+      setPhoneNumber(profile.phone_number || '');
+      setAvatarUrl(profile.avatar_url || null);
+    }
+  }, [profile]);
 
   if (!profile) {
     return (
@@ -71,7 +82,8 @@ const Profile = () => {
     try {
       await updateProfile({
         username,
-        phone_number: phoneNumber
+        phone_number: phoneNumber,
+        avatar_url: avatarUrl
       });
     } finally {
       setIsUpdating(false);
@@ -111,6 +123,113 @@ const Profile = () => {
     }
   };
 
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) {
+      return;
+    }
+
+    try {
+      setIsUploading(true);
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `avatars/${profile.id}-${Math.random()}.${fileExt}`;
+
+      // First check if the bucket exists, if not create it
+      try {
+        const { data: buckets } = await supabase.storage.listBuckets();
+        const profilesBucketExists = buckets?.some(bucket => bucket.name === 'profiles');
+        
+        if (!profilesBucketExists) {
+          // Create the bucket if it doesn't exist
+          const { error: createBucketError } = await supabase.storage.createBucket('profiles', {
+            public: true,
+            fileSizeLimit: 5242880 // 5MB
+          });
+          
+          if (createBucketError) {
+            console.error("Error creating bucket:", createBucketError);
+            throw createBucketError;
+          }
+        }
+      } catch (bucketError) {
+        console.error("Error checking/creating bucket:", bucketError);
+      }
+
+      // Upload the file to Supabase storage
+      const { error: uploadError, data } = await supabase.storage
+        .from('profiles')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      // Get the public URL
+      const { data: urlData } = supabase.storage
+        .from('profiles')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const newAvatarUrl = urlData.publicUrl;
+      setAvatarUrl(newAvatarUrl);
+
+      // Update the profile in the database using Supabase directly
+      // Check if avatar_url column exists in profiles table
+      try {
+        // First, try to get the profile to confirm the schema
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', profile.id)
+          .single();
+
+        if (profileError) {
+          console.error("Error fetching profile schema:", profileError);
+        }
+
+        // Now attempt the update with the avatar_url field
+        const { error: updateError } = await supabase
+          .from('profiles')
+          .update({ avatar_url: newAvatarUrl })
+          .eq('id', profile.id);
+
+        if (updateError) {
+          console.error("Error updating profile with avatar_url:", updateError);
+          
+          // If there was an error updating, try using the updateProfile function 
+          // from the AuthContext as a fallback
+          await updateProfile({
+            avatar_url: newAvatarUrl
+          });
+        }
+      } catch (error) {
+        console.error("Error during profile update:", error);
+        toast({
+          title: "Update Failed",
+          description: "There was an error updating your profile. Please try again.",
+          variant: "destructive"
+        });
+      }
+
+      toast({
+        title: "Profile Picture Updated",
+        description: "Your profile picture has been updated successfully."
+      });
+    } catch (error: any) {
+      console.error('Error uploading avatar:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Failed to upload profile picture.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <DashboardLayout title="Admin Profile" role="admin" currentPath="/admin/profile">
       <div className="container mx-auto py-6 max-w-4xl">
@@ -130,20 +249,41 @@ const Profile = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-6">
-                  {/* Profile image placeholder */}
+                  {/* Profile image upload */}
                   <div className="flex flex-col items-center space-y-4">
-                    <div className="bus-gradient-bg rounded-full p-12 relative">
-                      <User className="h-16 w-16 text-white absolute inset-0 m-auto" />
+                    <div className="rounded-full relative w-32 h-32 overflow-hidden">
+                      {avatarUrl ? (
+                        <Avatar className="w-32 h-32">
+                          <AvatarImage src={avatarUrl} alt={username} />
+                          <AvatarFallback className="bus-gradient-bg text-white text-2xl">
+                            {username.charAt(0).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="bus-gradient-bg w-32 h-32 rounded-full flex items-center justify-center">
+                          <User className="h-16 w-16 text-white" />
+                        </div>
+                      )}
                     </div>
-                    <Button variant="outline" disabled>
-                      Upload Image
-                    </Button>
-                    <span className="text-xs text-muted-foreground">
-                      (Coming soon)
-                    </span>
+                    <div>
+                      <Label htmlFor="avatar-upload" className="cursor-pointer">
+                        <div className="flex items-center gap-2 p-2 border rounded-md hover:bg-secondary">
+                          <Upload className="h-4 w-4" />
+                          <span>{isUploading ? "Uploading..." : "Upload Image"}</span>
+                        </div>
+                        <Input 
+                          id="avatar-upload" 
+                          type="file" 
+                          className="hidden" 
+                          accept="image/*"
+                          onChange={handleAvatarUpload}
+                          disabled={isUploading}
+                        />
+                      </Label>
+                    </div>
                   </div>
-
-                  {/* Profile form */}
+                  
+                  {/* Rest of profile form unchanged */}
                   <div className="flex-1 space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">Username</Label>
@@ -205,20 +345,13 @@ const Profile = () => {
                   </div>
                 </div>
               </CardContent>
-              <CardFooter>
-                <Button 
-                  onClick={handleProfileUpdate} 
+              <CardFooter className="justify-end">
+                <Button
                   disabled={isUpdating}
-                  className="ml-auto"
+                  onClick={handleProfileUpdate}
                 >
                   {isUpdating ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Updating...
-                    </>
+                    <>Saving...</>
                   ) : (
                     <>
                       <Save className="mr-2 h-4 w-4" />
@@ -230,25 +363,23 @@ const Profile = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="security" className="space-y-6">
+          <TabsContent value="security">
             <Card>
               <CardHeader>
                 <CardTitle>Security Settings</CardTitle>
                 <CardDescription>
-                  Manage your password and account security preferences.
+                  Update your password and security preferences.
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-4 border rounded-lg">
-                  <div>
-                    <h3 className="font-medium">Password</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Change your account password
-                    </p>
-                  </div>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">Password</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Change your password to something you can remember but others can't guess.
+                  </p>
                   <Dialog open={passwordDialogOpen} onOpenChange={setPasswordDialogOpen}>
                     <DialogTrigger asChild>
-                      <Button variant="outline" className="mt-2 md:mt-0">
+                      <Button className="mt-2">
                         <Lock className="mr-2 h-4 w-4" />
                         Change Password
                       </Button>
@@ -257,19 +388,10 @@ const Profile = () => {
                       <DialogHeader>
                         <DialogTitle>Change Password</DialogTitle>
                         <DialogDescription>
-                          Update your account password. After saving, you'll need to use the new password to log in.
+                          Enter a new password for your account.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="space-y-4 py-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="current-password">Current Password</Label>
-                          <Input
-                            id="current-password"
-                            type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                          />
-                        </div>
                         <div className="space-y-2">
                           <Label htmlFor="new-password">New Password</Label>
                           <Input
@@ -277,6 +399,7 @@ const Profile = () => {
                             type="password"
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
+                            className="col-span-3"
                           />
                         </div>
                         <div className="space-y-2">
@@ -286,21 +409,19 @@ const Profile = () => {
                             type="password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="col-span-3"
                           />
                         </div>
                       </div>
                       <DialogFooter>
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setPasswordDialogOpen(false)}
-                        >
+                        <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
                           Cancel
                         </Button>
                         <Button 
                           onClick={handlePasswordUpdate}
                           disabled={isUpdating}
                         >
-                          {isUpdating ? "Updating..." : "Save Changes"}
+                          {isUpdating ? "Updating..." : "Update Password"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>

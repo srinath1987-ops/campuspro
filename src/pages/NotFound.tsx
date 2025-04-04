@@ -1,13 +1,12 @@
-
 import { useNavigate, useLocation } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAppSelector } from "@/redux/hooks";
 
 const NotFound = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, profile, isLoading } = useAuth();
+  const { user, profile, isLoading } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     console.error(

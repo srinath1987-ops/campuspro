@@ -1,4 +1,65 @@
-# Welcome to your Lovable project
+# Campus Bus Pro
+
+A modern campus bus management system with feedback features and role-based access. The system includes profiles for administrators, drivers, and public-facing components for students.
+
+## Features
+
+- 🚌 Real-time bus tracking and management
+- 👤 Role-based access (Admin, Driver, Public)
+- 🎨 Modern UI with light and dark mode
+- 📱 Fully responsive design
+- 📝 Student feedback system
+- 📊 Admin analytics dashboard
+- 🔒 Secure authentication with Supabase
+
+## Database Setup
+
+### Option 1: Using the included script
+
+To set up the required database tables:
+
+1. Run the SQL script in the Supabase SQL Editor:
+   - Open your Supabase dashboard
+   - Navigate to SQL Editor
+   - Copy and paste the contents of `scripts/create_missing_tables.sql`
+   - Click Execute
+
+This will create:
+- Feedback table with proper RLS policies
+- Storage bucket for profile images with appropriate security policies
+
+### Option 2: Using Supabase CLI
+
+If you have the Supabase CLI configured:
+
+```bash
+npm run apply-schema
+```
+
+## Getting Started
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Set up your environment variables in `.env`:
+   ```
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+4. Run the development server:
+   ```bash
+   npm run dev
+   ```
+
+## Technology Stack
+
+- React with TypeScript
+- Tailwind CSS for styling
+- Redux for state management
+- Supabase for backend services
+- Vite as the build tool
 
 ## Project info
 
@@ -49,16 +110,6 @@ npm run dev
 - Select the "Codespaces" tab.
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
 
 ## How can I deploy this project?
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { BusFront, LogIn, UserPlus, Database } from 'lucide-react';
@@ -24,6 +23,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { login } from '@/redux/slices/authSlice';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { setupDemoData } from '@/utils/setupDemoData';
@@ -42,12 +43,15 @@ const loginSchema = z.object({
 type LoginValues = z.infer<typeof loginSchema>;
 
 const Login = () => {
-  const [isLoading, setIsLoading] = useState(false);
   const [isSettingUpDemo, setIsSettingUpDemo] = useState(false);
-  const { signIn, user, profile } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
+  
+  // Redux state
+  const dispatch = useAppDispatch();
+  const { user, profile, isLoading, error } = useAppSelector(state => state.auth);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -59,32 +63,45 @@ const Login = () => {
 
   // Effect to redirect authenticated users
   useEffect(() => {
-    console.log("Login page auth state:", { user: !!user, profile: profile?.role });
     if (user && profile) {
+      // Get redirect URL from query params if available
+      const params = new URLSearchParams(location.search);
+      const redirectPath = params.get('redirect');
+      
+      if (redirectPath) {
+        // Check if the redirect URL is appropriate for the user role
+        const isAdminRoute = redirectPath.startsWith('/admin');
+        const isDriverRoute = redirectPath.startsWith('/driver');
+        
+        if ((isAdminRoute && profile.role === 'admin') || 
+            (isDriverRoute && profile.role === 'driver')) {
+          navigate(redirectPath);
+          return;
+        }
+      }
+      
+      // If no redirect URL or inappropriate role, use default redirection
       redirectBasedOnRole(profile.role);
     }
-  }, [user, profile]);
+  }, [user, profile, location.search, navigate]);
 
   const redirectBasedOnRole = (role: string) => {
-    console.log("Redirecting based on role:", role);
     if (role === 'admin') {
-      navigate('/admin/dashboard');
+      navigate('/admin/dashboard', { replace: true });
     } else if (role === 'driver') {
-      navigate('/driver/dashboard');
+      navigate('/driver/dashboard', { replace: true });
     }
   };
 
   const onSubmit = async (values: LoginValues) => {
-    setIsLoading(true);
     try {
       console.log("Attempting to sign in:", values.email);
-      await signIn(values.email, values.password);
-      // Navigation is handled in the useEffect above
+      // Use the Redux action instead of the context function
+      await dispatch(login({ email: values.email, password: values.password })).unwrap();
+      // Navigation is handled in the useEffect above when user/profile is updated
     } catch (error) {
       console.error('Login error:', error);
-      // Error toasts are handled in the AuthContext
-    } finally {
-      setIsLoading(false);
+      // Error display is now handled through Redux state
     }
   };
 
@@ -198,6 +215,13 @@ const Login = () => {
                   </Button>
                 </form>
               </Form>
+              
+              {/* Display error from Redux state */}
+              {error && (
+                <div className="text-sm text-red-500 font-medium p-2 bg-red-50 border border-red-200 rounded">
+                  {error}
+                </div>
+              )}
             </CardContent>
             <CardFooter className="flex flex-col">
               <div className="text-sm text-center mb-4">

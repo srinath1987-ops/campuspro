@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, MapPin, Clock, Truck, User, Phone, Calendar, X, Edit, Save, Trash2,
-  ChevronDown, ChevronUp, Loader
+  ChevronDown, ChevronUp, Loader, Lock
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger
 } from "@/components/ui/dialog";
 
 // Define Bus and Route types
@@ -292,8 +293,8 @@ const Buses = () => {
         {/* Header Section with Add Bus Button */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold">Buses</h2>
-            <p className="text-gray-500">Manage all buses and their details</p>
+            <h2 className="text-2xl font-bold text-foreground">Buses</h2>
+            <p className="text-muted-foreground">Manage all buses and their details</p>
           </div>
           <Button className="bus-gradient-bg" onClick={handleAddBus}>
             <Plus className="h-4 w-4 mr-2" /> Add New Bus
@@ -302,14 +303,14 @@ const Buses = () => {
 
         {/* Add Bus Form - Expandable Card */}
         {isAddFormVisible && (
-          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center z-50">
             <div 
               ref={formRef} 
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto"
+              className="bg-card dark:bg-card rounded-lg shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto"
             >
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold">Add New Bus</h2>
+                  <h2 className="text-xl font-bold text-foreground">Add New Bus</h2>
                   <Button 
                     variant="ghost" 
                     size="icon" 
@@ -323,7 +324,7 @@ const Buses = () => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">Bus Number<span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-foreground mb-1">Bus Number<span className="text-red-500">*</span></label>
                       <Input 
                         type="text" 
                         name="bus_number" 
@@ -331,10 +332,11 @@ const Buses = () => {
                         onChange={handleFormChange}
                         placeholder="e.g. B001" 
                         required
+                        className="bg-background dark:bg-background"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">RFID ID<span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-foreground mb-1">RFID ID<span className="text-red-500">*</span></label>
                       <Input 
                         type="text" 
                         name="rfid_id" 
@@ -342,10 +344,11 @@ const Buses = () => {
                         onChange={handleFormChange}
                         placeholder="e.g. RFID12345" 
                         required
+                        className="bg-background dark:bg-background"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Bus Capacity<span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-foreground mb-1">Bus Capacity<span className="text-red-500">*</span></label>
                       <Input 
                         type="number" 
                         name="bus_capacity" 
@@ -353,10 +356,11 @@ const Buses = () => {
                         onChange={handleFormChange}
                         placeholder="e.g. 50" 
                         required
+                        className="bg-background dark:bg-background"
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Start Point<span className="text-red-500">*</span></label>
+                      <label className="block text-sm font-medium text-foreground mb-1">Start Point<span className="text-red-500">*</span></label>
                       <Input 
                         type="text" 
                         name="start_point" 
@@ -364,38 +368,41 @@ const Buses = () => {
                         onChange={handleFormChange}
                         placeholder="e.g. City Center" 
                         required
+                        className="bg-background dark:bg-background"
                       />
                     </div>
                   </div>
                   
-                  <div className="border-t border-gray-200 pt-4">
-                    <h3 className="text-lg font-medium mb-3">Route Information</h3>
+                  <div className="border-t border-border pt-4">
+                    <h3 className="text-lg font-medium mb-3 text-foreground">Route Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-sm font-medium mb-1">Route Number</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">Route Number</label>
                         <Input 
                           type="text" 
                           name="route_no" 
                           value={newRoute.route_no} 
                           onChange={handleRouteChange}
                           placeholder="e.g. R001"
+                          className="bg-background dark:bg-background"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Via</label>
+                        <label className="block text-sm font-medium text-foreground mb-1">Via</label>
                         <Input 
                           type="text" 
                           name="via" 
                           value={newRoute.via || ''} 
                           onChange={handleRouteChange}
                           placeholder="e.g. Downtown, Suburbs"
+                          className="bg-background dark:bg-background"
                         />
                       </div>
                     </div>
                     
                     <div className="mt-4">
                       <div className="flex justify-between items-center mb-2">
-                        <label className="block text-sm font-medium">Route Stops</label>
+                        <label className="block text-sm font-medium text-foreground">Route Stops</label>
                         <Button 
                           type="button" 
                           variant="outline" 
@@ -408,7 +415,7 @@ const Buses = () => {
                       </div>
                       
                       {newRoute.stops.length === 0 ? (
-                        <p className="text-sm text-gray-500 py-2">No stops added. Click 'Add Stop' to add stops to this route.</p>
+                        <p className="text-sm text-muted-foreground py-2">No stops added. Click 'Add Stop' to add stops to this route.</p>
                       ) : (
                         <div className="space-y-3">
                           {newRoute.stops.map((stop, index) => (
@@ -419,13 +426,14 @@ const Buses = () => {
                                   value={stop.time} 
                                   onChange={(e) => updateStop(index, 'time', e.target.value)}
                                   placeholder="Time (e.g. 08:30 AM)" 
-                                  className="mb-1"
+                                  className="mb-1 bg-background dark:bg-background"
                                 />
                                 <Input 
                                   type="text" 
                                   value={stop.location} 
                                   onChange={(e) => updateStop(index, 'location', e.target.value)}
                                   placeholder="Location (e.g. Market Street)" 
+                                  className="bg-background dark:bg-background"
                                 />
                               </div>
                               <Button 
@@ -433,7 +441,7 @@ const Buses = () => {
                                 variant="ghost" 
                                 size="sm"
                                 onClick={() => removeStop(index)}
-                                className="h-8 w-8 text-red-500"
+                                className="h-8 w-8 text-red-500 dark:text-red-400"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </Button>
@@ -476,14 +484,14 @@ const Buses = () => {
         )}
 
         {/* Buses List */}
-        <div className="bg-white rounded-lg shadow">
+        <div className="bg-card dark:bg-card rounded-lg shadow">
           {isLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
             </div>
           ) : buses.length === 0 ? (
             <div className="text-center py-12">
-              <h3 className="text-lg font-medium">No buses found</h3>
+              <h3 className="text-lg font-medium text-foreground">No buses found</h3>
               <p className="text-muted-foreground">
                 There are no buses registered yet. Add your first bus to get started.
               </p>
@@ -494,44 +502,44 @@ const Buses = () => {
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-muted dark:bg-muted">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Bus Number
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Driver
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Capacity
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Status
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-background dark:bg-background divide-y divide-border">
                   {buses.map((bus) => (
-                    <tr key={bus.rfid_id} className="hover:bg-gray-50">
+                    <tr key={bus.rfid_id} className="hover:bg-muted/50 dark:hover:bg-muted/50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-gray-900">{bus.bus_number}</div>
-                        <div className="text-sm text-gray-500">RFID: {bus.rfid_id}</div>
+                        <div className="font-medium text-foreground">{bus.bus_number}</div>
+                        <div className="text-sm text-muted-foreground">RFID: {bus.rfid_id}</div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-gray-900">{bus.driver_name || 'Not yet assigned'}</div>
-                        <div className="text-sm text-gray-500">{bus.driver_phone || '-'}</div>
+                        <div className="text-sm text-foreground">{bus.driver_name || 'Not yet assigned'}</div>
+                        <div className="text-sm text-muted-foreground">{bus.driver_phone || '-'}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                         {bus.bus_capacity} seats
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           bus.in_campus 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-red-100 text-red-800'
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200'
                         }`}>
                           {bus.in_campus ? 'In Campus' : 'Out of Campus'}
                         </span>
@@ -540,7 +548,7 @@ const Buses = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-blue-600 hover:text-blue-900"
+                          className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
                           onClick={() => handleViewBus(bus)}
                         >
                           View
@@ -548,7 +556,7 @@ const Buses = () => {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="text-indigo-600 hover:text-indigo-900"
+                          className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
                         >
                           Edit
                         </Button>
@@ -564,11 +572,11 @@ const Buses = () => {
 
       {/* Bus Details Dialog - Updated for better responsiveness */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-4xl w-[95vw] max-h-[90vh] overflow-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto bg-background dark:bg-background">
           {selectedBus && (
             <>
               <DialogHeader>
-                <DialogTitle className="text-xl">Bus {selectedBus.bus_number} Details</DialogTitle>
+                <DialogTitle className="text-xl text-foreground">Bus {selectedBus.bus_number} Details</DialogTitle>
                 <DialogDescription>
                   Complete information about the bus and its route
                 </DialogDescription>
@@ -576,52 +584,52 @@ const Buses = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
                 <div>
-                  <h3 className="font-semibold mb-3 flex items-center">
+                  <h3 className="font-semibold mb-3 flex items-center text-foreground">
                     <Truck className="mr-2 h-4 w-4 text-primary" />
                     Bus Information
                   </h3>
                   <div className="space-y-2">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Bus Number</span>
-                      <span className="font-medium">{selectedBus.bus_number}</span>
+                      <span className="font-medium text-foreground">{selectedBus.bus_number}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">RFID ID</span>
-                      <span className="font-medium">{selectedBus.rfid_id}</span>
+                      <span className="font-medium text-foreground">{selectedBus.rfid_id}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Capacity</span>
-                      <span className="font-medium">{selectedBus.bus_capacity} seats</span>
+                      <span className="font-medium text-foreground">{selectedBus.bus_capacity} seats</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Current Status</span>
-                      <Badge className={selectedBus.in_campus ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}>
+                      <Badge className={selectedBus.in_campus ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200" : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200"}>
                         {selectedBus.in_campus ? 'In Campus' : 'Out of Campus'}
                       </Badge>
                     </div>
                   </div>
 
-                  <h3 className="font-semibold mt-6 mb-3 flex items-center">
+                  <h3 className="font-semibold mt-6 mb-3 flex items-center text-foreground">
                     <User className="mr-2 h-4 w-4 text-primary" />
                     Driver Information
                   </h3>
                   <div className="space-y-2">
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Driver Name</span>
-                      <span className="font-medium">{selectedBus.driver_name || 'Not yet assigned'}</span>
+                      <span className="font-medium text-foreground">{selectedBus.driver_name || 'Not yet assigned'}</span>
                     </div>
                     <div className="flex flex-col">
                       <span className="text-sm text-muted-foreground">Contact</span>
                       <div className="flex items-center">
                         <Phone className="h-4 w-4 mr-1 text-muted-foreground" />
-                        <span className="font-medium">{selectedBus.driver_phone || 'Not available'}</span>
+                        <span className="font-medium text-foreground">{selectedBus.driver_phone || 'Not available'}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <h3 className="font-semibold mb-3 flex items-center">
+                  <h3 className="font-semibold mb-3 flex items-center text-foreground">
                     <MapPin className="mr-2 h-4 w-4 text-primary" />
                     Route Information
                   </h3>
@@ -646,14 +654,14 @@ const Buses = () => {
                       <div className="mt-4">
                         <span className="text-sm text-muted-foreground">Stops</span>
                         <div className="relative mt-2 max-h-[300px] overflow-y-auto pr-2">
-                          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                          <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border"></div>
                           <div className="space-y-4">
                             {safeParseStops(selectedRoute.stops).map((stop, idx) => (
                               <div key={idx} className="relative pl-8">
                                 <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
-                                <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                                  <div className="font-medium">{stop.location}</div>
-                                  <div className="text-gray-600 text-sm">
+                                <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
+                                  <div className="font-medium text-foreground">{stop.location}</div>
+                                  <div className="text-muted-foreground text-sm">
                                     <Clock className="h-3 w-3 inline mr-1" /> {stop.time}
                                   </div>
                                 </div>
@@ -661,9 +669,9 @@ const Buses = () => {
                             ))}
                             <div className="relative pl-8">
                               <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-green-500 rounded-full"></div>
-                              <div className="bg-white p-2 rounded-lg border border-gray-200 shadow-sm">
-                                <div className="font-medium">Campus (Arrival)</div>
-                                <div className="text-gray-600 text-sm">
+                              <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
+                                <div className="font-medium text-foreground">Campus (Arrival)</div>
+                                <div className="text-muted-foreground text-sm">
                                   <Clock className="h-3 w-3 inline mr-1" /> 8:30 AM (Approx.)
                                 </div>
                               </div>
@@ -673,7 +681,7 @@ const Buses = () => {
                       </div>
                     </div>
                   ) : (
-                    <div className="bg-gray-50 p-4 rounded-md">
+                    <div className="bg-muted dark:bg-muted p-4 rounded-md">
                       <p className="text-muted-foreground">No route information available for this bus.</p>
                     </div>
                   )}

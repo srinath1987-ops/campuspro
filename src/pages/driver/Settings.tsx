@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Moon, Sun, Monitor, Bell } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,10 +7,11 @@ import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
+import { useTheme } from '@/components/theme-provider';
 
 const Settings = () => {
-  // In a real app, these settings would be persisted to localStorage or a backend service
-  const [theme, setTheme] = useState<'light' | 'dark' | 'system'>('light');
+  // Theme is now managed by the ThemeProvider
+  const { theme, setTheme } = useTheme();
   const [telegramNotificationEnabled, setTelegramNotificationEnabled] = useState(false);
   const { toast } = useToast();
 
@@ -91,31 +91,27 @@ const Settings = () => {
             <CardHeader>
               <CardTitle>Notifications</CardTitle>
               <CardDescription>
-                Configure how and when you receive notifications.
+                Configure your notification preferences.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label className="text-base">Telegram Reminders</Label>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">Telegram Notifications</h3>
                   <p className="text-sm text-muted-foreground">
-                    Receive a daily notification at 3:50 PM to submit student count
+                    Receive notifications on Telegram when it's time to submit student counts.
                   </p>
                 </div>
-                <Switch
-                  checked={telegramNotificationEnabled}
-                  onCheckedChange={handleTelegramToggle}
-                />
-              </div>
-              <Separator />
-              <div className="flex flex-col gap-2">
-                <p className="text-sm text-muted-foreground">
-                  <Bell className="inline-block mr-1 h-4 w-4" /> 
-                  When enabled, we'll send you a reminder via Telegram each day at 3:50 PM to submit your daily student count.
-                </p>
-                <p className="text-sm text-muted-foreground italic">
-                  Note: You'll need to link your Telegram account with our bot to receive notifications (coming soon).
-                </p>
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="telegram-notifications" 
+                    checked={telegramNotificationEnabled}
+                    onCheckedChange={handleTelegramToggle}
+                  />
+                  <Label htmlFor="telegram-notifications">
+                    Daily reminder at 3:50 PM
+                  </Label>
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -45,43 +44,62 @@
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
+    /* Softer dark theme similar to Notion */
+    --background: 220 6% 10%;
+    --foreground: 210 20% 92%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 220 7% 12%;
+    --card-foreground: 210 20% 92%;
 
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 220 7% 12%;
+    --popover-foreground: 210 20% 92%;
 
     --primary: 199 89% 55%;
-    --primary-foreground: 240 5.9% 10%;
+    --primary-foreground: 220 7% 12%;
 
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 215 6% 16%;
+    --secondary-foreground: 210 20% 92%;
 
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted: 215 6% 16%;
+    --muted-foreground: 217 6% 68%;
 
-    --accent: 240 3.7% 15.9%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 215 6% 16%;
+    --accent-foreground: 210 20% 92%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 68% 50%;
+    --destructive-foreground: 210 20% 92%;
 
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+    --border: 215 6% 24%;
+    --input: 215 6% 24%;
+    --ring: 224 60% 80%;
 
-    --sidebar-background: 240 10% 3.9%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 98%;
-    --sidebar-primary-foreground: 240 10% 3.9%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 142.1 70.6% 45.3%;
+    /* Sidebar has slightly darker background than main content */
+    --sidebar-background: 220 8% 7%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 199 89% 55%;
+    --sidebar-primary-foreground: 220 8% 7%;
+    --sidebar-accent: 215 7% 20%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 215 7% 20%;
+    --sidebar-ring: 199 89% 55%;
   }
+}
+
+/* Additional dark mode styles for better contrast and readability */
+.dark .bus-gradient-bg {
+  background: linear-gradient(135deg, hsl(199, 89%, 55%) 0%, hsl(204, 89%, 45%) 100%);
+}
+
+.dark .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .truncate {
+  color: hsl(217, 6%, 80%);
+}
+
+.dark :is(h1, h2, h3, h4, h5, h6) {
+  color: hsl(210, 20%, 92%);
 }
 
 @layer base {

@@ -228,7 +228,7 @@ export type Database = {
     Functions: {
       get_user_role: {
         Args: {
-          user_id: string
+          id: string
         }
         Returns: string
       }
