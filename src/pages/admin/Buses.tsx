@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, MapPin, Clock, Truck, User, Phone, Calendar } from 'lucide-react';
@@ -70,7 +69,16 @@ const Buses = () => {
         const routesMap: Record<string, BusRoute> = {};
         routesData?.forEach(route => {
           if (route.bus_number) {
-            routesMap[route.bus_number] = route;
+            // Convert the stops data to the correct format using our helper function
+            const parsedStops = safeParseStops(route.stops);
+            routesMap[route.bus_number] = {
+              id: route.id,
+              route_no: route.route_no,
+              bus_number: route.bus_number,
+              stops: parsedStops,
+              via: route.via,
+              rfid_id: route.rfid_id
+            };
           }
         });
         
