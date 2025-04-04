@@ -14,12 +14,12 @@ const FeatureCard = ({
   title: string; 
   description: string;
 }) => (
-  <div className="rounded-xl bg-white shadow-md p-6 transition-all hover:shadow-lg hover:-translate-y-1">
+  <div className="rounded-xl bg-card dark:bg-card shadow-md p-6 transition-all hover:shadow-lg hover:-translate-y-1 border border-border">
     <div className="mb-4 p-3 bus-gradient-bg rounded-full inline-block">
       <Icon className="h-6 w-6 text-white" />
     </div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
+    <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
+    <p className="text-muted-foreground">{description}</p>
   </div>
 );
 
@@ -35,7 +35,7 @@ const Features = () => {
             <h1 className="text-3xl md:text-4xl font-bold mb-4 bus-gradient-text">
               Comprehensive Bus Tracking Features
             </h1>
-            <p className="text-xl text-gray-600 mb-6">
+            <p className="text-xl text-muted-foreground mb-6">
               Our system offers a wide range of features designed to make campus transportation management efficient and hassle-free
             </p>
           </div>
@@ -43,11 +43,11 @@ const Features = () => {
       </section>
       
       {/* Features Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Key System Features</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Key System Features</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Explore the powerful capabilities of our IoT-enabled bus tracking system
             </p>
           </div>
@@ -103,23 +103,23 @@ const Features = () => {
       </section>
       
       {/* Admin vs Driver Features */}
-      <section className="py-16">
+      <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Role-Based Features</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Role-Based Features</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Our system provides tailored experiences for different users
             </p>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
             {/* Admin Features */}
-            <div className="bg-white rounded-xl shadow-md p-8">
+            <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 border border-border">
               <div className="mb-6 p-4 bus-gradient-bg rounded-full inline-flex">
                 <UserPlus className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">Admin Features</h3>
-              <ul className="space-y-3 text-gray-700">
+              <h3 className="text-2xl font-bold mb-4 text-foreground">Admin Features</h3>
+              <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start">
                   <div className="mr-2 mt-1 text-primary">•</div>
                   <span>Comprehensive analytics dashboard</span>
@@ -152,12 +152,12 @@ const Features = () => {
             </div>
             
             {/* Driver Features */}
-            <div className="bg-white rounded-xl shadow-md p-8">
+            <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 border border-border">
               <div className="mb-6 p-4 bus-gradient-bg rounded-full inline-flex">
                 <BusFront className="h-8 w-8 text-white" />
               </div>
-              <h3 className="text-2xl font-bold mb-4">Driver Features</h3>
-              <ul className="space-y-3 text-gray-700">
+              <h3 className="text-2xl font-bold mb-4 text-foreground">Driver Features</h3>
+              <ul className="space-y-3 text-muted-foreground">
                 <li className="flex items-start">
                   <div className="mr-2 mt-1 text-primary">•</div>
                   <span>Daily student count submission</span>
@@ -204,7 +204,7 @@ const Features = () => {
               onClick={() => window.location.href = '/login'}
               variant="secondary"
               size="lg"
-              className="bg-white text-primary hover:bg-gray-100"
+              className="bg-white text-primary hover:bg-gray-100 dark:hover:bg-gray-200"
             >
               <LogIn className="h-4 w-4 mr-2" /> Log In Now
             </Button>

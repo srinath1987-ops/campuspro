@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Users, Code, School, Cpu, Server, Award } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -18,8 +17,8 @@ const TeamMemberCard = ({
     <div className="w-32 h-32 rounded-full overflow-hidden mb-4 border-4 border-primary/20">
       <img src={imageUrl} alt={name} className="w-full h-full object-cover" />
     </div>
-    <h3 className="text-xl font-bold">{name}</h3>
-    <p className="text-gray-600">{role}</p>
+    <h3 className="text-xl font-bold text-foreground">{name}</h3>
+    <p className="text-muted-foreground">{role}</p>
   </div>
 );
 
@@ -33,12 +32,12 @@ const TechnologyCard = ({
   title: string; 
   description: string;
 }) => (
-  <div className="bg-white rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all hover:shadow-lg hover:-translate-y-1">
+  <div className="bg-card dark:bg-card rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all hover:shadow-lg hover:-translate-y-1 border border-border">
     <div className="mb-4 p-3 bus-gradient-bg rounded-full">
       <Icon className="h-6 w-6 text-white" />
     </div>
-    <h3 className="text-lg font-bold mb-2">{title}</h3>
-    <p className="text-gray-600 text-sm">{description}</p>
+    <h3 className="text-lg font-bold mb-2 text-foreground">{title}</h3>
+    <p className="text-muted-foreground text-sm">{description}</p>
   </div>
 );
 
@@ -54,7 +53,7 @@ const About = () => {
             <h1 className="text-3xl md:text-4xl font-bold mb-4 bus-gradient-text">
               About CampusPro
             </h1>
-            <p className="text-xl text-gray-600 mb-6">
+            <p className="text-xl text-muted-foreground mb-6">
               Learn about our mission to revolutionize campus transportation management with IoT technology
             </p>
           </div>
@@ -62,15 +61,15 @@ const About = () => {
       </section>
       
       {/* Mission Section */}
-      <section className="py-16">
+      <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <div className="text-center mb-12">
-              <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
+              <h2 className="text-3xl font-bold mb-4 text-foreground">Our Mission</h2>
               <div className="w-20 h-1 bus-gradient-bg mx-auto rounded-full mb-6"></div>
             </div>
             
-            <div className="text-lg text-gray-700 space-y-6">
+            <div className="text-lg text-muted-foreground space-y-6">
               <p>
                 At CampusPro, our mission is to transform campus transportation management through innovative IoT technology. We believe that efficient, transparent, and data-driven bus operations can significantly improve the campus experience for students, staff, and administrators.
               </p>
@@ -86,11 +85,11 @@ const About = () => {
       </section>
       
       {/* Technology Stack Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Technology Stack</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Our Technology Stack</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               We leverage cutting-edge technologies to deliver a robust and scalable solution
             </p>
           </div>
@@ -131,11 +130,11 @@ const About = () => {
       </section>
       
       {/* Team Section */}
-      <section className="py-16">
+      <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Our Team</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Our Team</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Meet the talented individuals behind CampusPro
             </p>
           </div>
@@ -176,13 +175,13 @@ const About = () => {
       </section>
       
       {/* Institution Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-3xl font-bold mb-6">Developed at</h2>
-            <div className="bg-white rounded-xl shadow-md p-8 inline-block">
-              <h3 className="text-2xl font-bold mb-2">Sri Nandhanam College of Engineering and Technology</h3>
-              <p className="text-gray-600">
+            <h2 className="text-3xl font-bold mb-6 text-foreground">Developed at</h2>
+            <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 inline-block border border-border">
+              <h3 className="text-2xl font-bold mb-2 text-foreground">Sri Nandhanam College of Engineering and Technology</h3>
+              <p className="text-muted-foreground">
                 A premier institution dedicated to innovation and excellence in engineering education
               </p>
             </div>

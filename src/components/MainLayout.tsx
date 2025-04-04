@@ -76,13 +76,13 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
-              <SheetContent className="w-3/4 sm:w-64 p-0">
+              <SheetContent className="w-3/4 sm:w-64 p-0 bg-background dark:bg-background">
                 <div className="flex flex-col h-full">
-                  <div className="p-4 border-b">
+                  <div className="p-4 border-b border-border">
                     <div className="flex items-center justify-between">
                       <Link to="/" className="flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
                         <Bus className="h-6 w-6 text-primary" />
-                        <span className="font-bold text-xl">Campus Pro</span>
+                        <span className="font-bold text-xl text-foreground">Campus Pro</span>
                       </Link>
                       <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
                         <X className="h-5 w-5" />
@@ -99,7 +99,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                               "block py-2 transition-colors",
                               link.highlight
                                 ? "text-primary hover:text-primary/80 font-medium"
-                                : "hover:text-primary"
+                                : "text-muted-foreground hover:text-foreground"
                             )}
                             onClick={() => setIsMenuOpen(false)}
                           >
@@ -109,7 +109,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                       ))}
                     </ul>
                   </nav>
-                  <div className="p-4 border-t">
+                  <div className="p-4 border-t border-border">
                     <Button asChild className="w-full">
                       <Link to="/login" onClick={() => setIsMenuOpen(false)}>
                         Log In <ArrowRight className="ml-2 h-4 w-4" />
@@ -124,16 +124,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1">
+      <main className="flex-1 bg-background dark:bg-background">
         {children}
       </main>
 
       {/* Footer */}
-      <footer className="border-t py-6 md:py-10">
+      <footer className="border-t py-6 md:py-10 border-border">
         <div className="container flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Bus className="h-5 w-5 text-primary" />
-            <span className="text-sm font-medium">Campus Pro &copy; {new Date().getFullYear()}</span>
+            <span className="text-sm font-medium text-foreground">Campus Pro &copy; {new Date().getFullYear()}</span>
           </div>
           <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
             <Link to="/about" className="hover:text-foreground transition-colors">

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BusFront, Cpu, Smartphone, Shield, Clock, Users } from 'lucide-react';
@@ -16,12 +15,12 @@ const FeatureCard = ({
   title: string; 
   description: string;
 }) => (
-  <div className="bus-card p-6 flex flex-col items-center text-center">
+  <div className="bus-card p-6 flex flex-col items-center text-center bg-card dark:bg-card border border-border">
     <div className="mb-4 p-3 bus-gradient-bg rounded-full">
       <Icon className="h-6 w-6 text-white" />
     </div>
-    <h3 className="text-xl font-bold mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
+    <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
+    <p className="text-muted-foreground">{description}</p>
   </div>
 );
 
@@ -33,9 +32,9 @@ const StatCard = ({
   value: string; 
   label: string;
 }) => (
-  <div className="bg-white rounded-lg shadow-md p-6 text-center">
+  <div className="bg-card dark:bg-card border border-border rounded-lg shadow-md p-6 text-center">
     <div className="text-3xl font-bold bus-gradient-text mb-2">{value}</div>
-    <div className="text-gray-600">{label}</div>
+    <div className="text-muted-foreground">{label}</div>
   </div>
 );
 
@@ -53,7 +52,7 @@ const Index = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-6 bus-gradient-text">
               Smart Bus Tracking for a Smarter Campus
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
+            <p className="text-xl text-muted-foreground mb-8">
               Real-time monitoring of campus buses with IoT technology, making transportation management efficient and reliable.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -77,11 +76,11 @@ const Index = () => {
       </section>
       
       {/* Features Section */}
-      <section className="py-16 bg-gray-50">
+      <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Key Features</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">Key Features</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Our IoT-enabled system provides comprehensive solutions for campus bus management
             </p>
           </div>
@@ -122,11 +121,11 @@ const Index = () => {
       </section>
       
       {/* Stats Section */}
-      <section className="py-16">
+      <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">System at a Glance</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-3xl font-bold mb-4 text-foreground">System at a Glance</h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
               Our smart bus tracking system is designed to scale with your campus needs
             </p>
           </div>

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight } from 'lucide-react';
+import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight, MessageCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { 
   DropdownMenu,
@@ -43,11 +43,12 @@ const NavItem = ({
         variant="ghost" 
         className={cn(
           isMobile ? "w-full justify-start" : "rounded-full gap-2",
-          isActive && "bg-primary/10",
+          isActive && "bg-primary/10 text-primary dark:bg-primary/20",
+          "text-foreground hover:text-primary",
           className
         )}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
         <span>{children}</span>
       </Button>
     </Link>
@@ -75,13 +76,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-border py-3">
-      <div className="container mx-auto px-4 flex justify-between items-center">
+    <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:border-gray-800">
+      <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="bus-gradient-bg rounded-full p-2">
-            <BusFront className="h-5 w-5 text-white" />
-          </div>
-          <span className="font-bold text-xl">CampusPro</span>
+          <BusFront className="h-5 w-5 text-primary" />
+          <span className="text-lg font-bold text-foreground">CampusPro</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-1">
@@ -89,12 +88,7 @@ const Navbar = () => {
           <NavItem to="/about" icon={Info}>About</NavItem>
           <NavItem to="/features" icon={PanelRight}>Features</NavItem>
           <NavItem to="/bus-points" icon={MapPin}>Bus Points</NavItem>
-          <Link
-            to="/feedback"
-            className="ml-2 px-3 py-2 text-sm font-medium text-foreground hover:text-primary"
-          >
-            Feedback
-          </Link>
+          <NavItem to="/feedback" icon={MessageCircle}>Feedback</NavItem>
           
           {user ? (
             <>
@@ -104,12 +98,12 @@ const Navbar = () => {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="rounded-full ml-2">
                     <User className="h-4 w-4 mr-2" />
-                    {profile?.username || 'Account'}
+                    {profile?.full_name || (profile as any)?.username || 'Account'}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                  <DropdownMenuItem disabled>
+                <DropdownMenuContent align="end" className="bg-background dark:bg-background">
+                  <DropdownMenuLabel className="text-foreground">My Account</DropdownMenuLabel>
+                  <DropdownMenuItem disabled className="text-muted-foreground">
                     {profile?.role === 'admin' ? 'Admin' : 'Driver'}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
@@ -156,19 +150,20 @@ const Navbar = () => {
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="md:hidden w-[250px] sm:w-[300px]">
+          <SheetContent side="right" className="md:hidden w-[250px] sm:w-[300px] bg-background dark:bg-background">
             <div className="flex flex-col gap-4 py-4">
               <NavItem to="/" icon={BusFront} isMobile onClick={() => setMobileMenuOpen(false)}>Home</NavItem>
               <NavItem to="/about" icon={Info} isMobile onClick={() => setMobileMenuOpen(false)}>About</NavItem>
               <NavItem to="/features" icon={PanelRight} isMobile onClick={() => setMobileMenuOpen(false)}>Features</NavItem>
               <NavItem to="/bus-points" icon={MapPin} isMobile onClick={() => setMobileMenuOpen(false)}>Bus Points</NavItem>
+              <NavItem to="/feedback" icon={MessageCircle} isMobile onClick={() => setMobileMenuOpen(false)}>Feedback</NavItem>
               
               {user ? (
                 <>
                   <NavItem to={getDashboardLink()} icon={Layers} isMobile onClick={() => setMobileMenuOpen(false)}>Dashboard</NavItem>
                   <div className="border-t border-border my-2 pt-2">
                     <p className="px-4 py-2 text-sm font-medium text-muted-foreground">
-                      Signed in as: {profile?.username}
+                      Signed in as: {profile?.full_name || (profile as any)?.username || 'User'}
                     </p>
                     <NavItem 
                       to={`/${profile?.role}/profile`} 
@@ -188,7 +183,7 @@ const Navbar = () => {
                     </NavItem>
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50"
+                      className="w-full justify-start text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
                       onClick={() => {
                         handleLogout();
                         setMobileMenuOpen(false);
