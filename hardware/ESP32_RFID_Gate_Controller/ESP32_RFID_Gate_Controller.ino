@@ -6,12 +6,16 @@
  * - RC522 RFID Reader
  * - MG996R Servo Motor for Gate
  * - LEDs (Green and Red)
+ * - BUZZERs (Inicator)
+ 
+ 
+ * IoT Bus Tracking System using ESP32, RFID, and Supabase
  * 
- * Functionality:
- * - Reads RFID tags from buses
- * - Controls gate entry/exit based on RFID validation
- * - Updates campus entry/exit status in Supabase
- * - Provides visual feedback via LEDs
+ * Hardware Components:
+ * - ESP32 Microcontroller
+ * - RC522 RFID Reader
+ * - MG996R Servo Motor for Gate
+ * - LEDs (Green and Red)
  */
 
 #include <WiFi.h>
@@ -20,14 +24,21 @@
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ESP32Servo.h>
+#include <time.h>
 
 // Network credentials
-const char* ssid = "SNUC";
-const char* password = "snu12345";
+const char* ssid = "adadro";
+const char* password = "rose@2012";
 
-// Supabase API endpoint
+// Supabase API endpoints
 const char* supabaseUrl = "https://imhfvwavskweneysqrof.supabase.co/functions/v1/http_bus_entry_exit";
+const char* supabaseStatusUrl = "https://imhfvwavskweneysqrof.supabase.co/functions/v1/http_bus_status"; // New endpoint for status
 const char* supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaGZ2d2F2c2t3ZW5leXNxcm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1ODU4NDUsImV4cCI6MjA1OTE2MTg0NX0.x0zkA41Bqk0I6lDp5Uo3EYUSyil2KNPOt9iqnuKW7sI";
+
+// NTP settings
+const char* ntpServer = "pool.ntp.org";
+const long gmtOffset_sec = 19800; // UTC+5:30 for IST
+const int daylightOffset_sec = 0; // No daylight saving
 
 // RFID reader pins
 #define SS_PIN 22
@@ -43,12 +54,12 @@ const char* supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Servo pin
 #define SERVO_PIN 13
 
+// Buzzer pin 
+#define BUZZER_PIN 15
+
 // Initialize RFID and Servo
 MFRC522 rfid(SS_PIN, RST_PIN);
 Servo gateServo;
-
-// Variable to track the last event type (for testing with a single ESP32)
-String lastEventType = "exit";  // Start with "exit" so the first scan is "entry"
 
 // Function declarations
 void connectToWiFi();
@@ -56,25 +67,30 @@ bool validateRFID(String rfidTag);
 void openGate();
 void closeGate();
 bool updateBusStatus(String rfidTag, String eventType);
+bool getBusStatus(String rfidTag, bool& inCampus);
 void blinkLED(int pin, int times, int delayTime);
+bool syncTimeWithNTP();
 
 void setup() {
-  // Serial and pins setup
   Serial.begin(115200);
   pinMode(GREEN_LED_PIN, OUTPUT);
   pinMode(RED_LED_PIN, OUTPUT);
+  pinMode(BUZZER_PIN, OUTPUT);
   
   // Turn on red LED initially (standby mode)
   digitalWrite(RED_LED_PIN, HIGH);
   digitalWrite(GREEN_LED_PIN, LOW);
   
-  // Connect to WiFi
+  // Connect to WiFi and sync time
   connectToWiFi();
+  if (syncTimeWithNTP()) {
+    Serial.println("NTP time synchronized successfully");
+  } else {
+    Serial.println("Failed to sync with NTP. Using default time.");
+  }
   
-  // Initialize SPI bus
+  // Initialize SPI bus and RFID
   SPI.begin(SCK_PIN, MISO_PIN, MOSI_PIN, SS_PIN);
-  
-  // Initialize RFID
   rfid.PCD_Init();
   Serial.println("RFID Reader initialized");
   
@@ -86,15 +102,25 @@ void setup() {
 }
 
 void loop() {
-  // Check if WiFi is connected
+  // Periodic NTP sync (every hour)
+  static unsigned long lastSyncTime = 0;
+  const unsigned long syncInterval = 3600000; // 1 hour in milliseconds
+  if (millis() - lastSyncTime > syncInterval) {
+    if (syncTimeWithNTP()) {
+      Serial.println("Periodic NTP sync successful");
+    }
+    lastSyncTime = millis();
+  }
+
+  // Check WiFi connection
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi disconnected. Reconnecting...");
     connectToWiFi();
+    syncTimeWithNTP();
   }
   
   // Look for new RFID cards
   if (rfid.PICC_IsNewCardPresent() && rfid.PICC_ReadCardSerial()) {
-    // Read RFID tag
     String rfidTag = "";
     for (byte i = 0; i < rfid.uid.size; i++) {
       rfidTag += (rfid.uid.uidByte[i] < 0x10 ? "0" : "") + String(rfid.uid.uidByte[i], HEX);
@@ -103,42 +129,42 @@ void loop() {
     
     Serial.println("RFID Tag detected: " + rfidTag);
     
-    // Toggle between "entry" and "exit" for testing
-    String currentEventType = (lastEventType == "entry") ? "exit" : "entry";
-    lastEventType = currentEventType;  // Update the last event type
-    Serial.println("Gate Mode: " + currentEventType);
+    // Determine event type based on current status
+    bool inCampus = false;
+    String currentEventType;
+    if (getBusStatus(rfidTag, inCampus)) {
+      currentEventType = inCampus ? "exit" : "entry";
+      Serial.println("Gate Mode: " + currentEventType);
+    } else {
+      Serial.println("Failed to fetch bus status, assuming entry");
+      currentEventType = "entry"; // Fallback
+    }
     
     // Process the RFID tag
     if (validateRFID(rfidTag)) {
-      // Valid RFID, update status in Supabase
       if (updateBusStatus(rfidTag, currentEventType)) {
-        // Success, open gate
         digitalWrite(GREEN_LED_PIN, HIGH);
         digitalWrite(RED_LED_PIN, LOW);
-        
+        digitalWrite(BUZZER_PIN,HIGH);
+        delay(50);
+        digitalWrite(BUZZER_PIN,LOW);
         openGate();
         delay(5000); // Keep gate open for 5 seconds
         closeGate();
-        
-        // Return to standby
         digitalWrite(GREEN_LED_PIN, LOW);
         digitalWrite(RED_LED_PIN, HIGH);
       } else {
-        // API call failed
         Serial.println("Failed to update bus status");
-        blinkLED(RED_LED_PIN, 5, 200); // Blink red LED to indicate error
+        blinkLED(RED_LED_PIN, 5, 200);
       }
     } else {
-      // Invalid RFID
       Serial.println("Invalid RFID tag");
-      blinkLED(RED_LED_PIN, 3, 300); // Blink red LED to indicate invalid tag
+      blinkLED(RED_LED_PIN, 3, 300);
     }
     
-    // Halt PICC and stop encryption
     rfid.PICC_HaltA();
     rfid.PCD_StopCrypto1();
-    
-    delay(1000); // Short delay before next read
+    delay(1000); // Delay before next read
   }
 }
 
@@ -156,88 +182,136 @@ void connectToWiFi() {
   
   if (WiFi.status() == WL_CONNECTED) {
     Serial.println("\nWiFi connected");
-    Serial.println("IP address: ");
-    Serial.println(WiFi.localIP());
+    Serial.println("IP address: " + WiFi.localIP().toString());
   } else {
     Serial.println("\nFailed to connect to WiFi. Check credentials or router.");
   }
 }
 
-// Validate RFID against known tags (can be enhanced to check against a database)
+// Sync time with NTP
+bool syncTimeWithNTP() {
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Cannot sync time: WiFi not connected");
+    return false;
+  }
+  
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  
+  Serial.println("Waiting for NTP time sync...");
+  time_t now = 0;
+  int attempts = 0;
+  const int maxAttempts = 20;
+  
+  while (attempts < maxAttempts) {
+    time(&now);
+    if (now > (gmtOffset_sec + 1609459200)) { // Check if time is after 2021-01-01
+      struct tm* timeinfo = localtime(&now);
+      char timeStr[25];
+      strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", timeinfo);
+      Serial.println("Current time: " + String(timeStr));
+      return true;
+    }
+    delay(500);
+    Serial.print(".");
+    attempts++;
+  }
+  
+  Serial.println("\nFailed to sync time with NTP");
+  return false;
+}
+
+// Validate RFID (placeholder, enhance as needed)
 bool validateRFID(String rfidTag) {
-  // For now, accept all RFID tags and let the database function validate
-  return true;
+  return true; // Accept all tags for now
 }
 
 // Open the gate
 void openGate() {
   Serial.println("Opening gate");
-  gateServo.write(90); // Set servo to 90 degrees to open gate
+  gateServo.write(90);
 }
 
 // Close the gate
 void closeGate() {
   Serial.println("Closing gate");
-  gateServo.write(0); // Set servo to 0 degrees to close gate
+  gateServo.write(0);
+}
+
+// Fetch current bus status from Supabase
+bool getBusStatus(String rfidTag, bool& inCampus) {
+  if (WiFi.status() == WL_CONNECTED) {
+    HTTPClient http;
+    String url = String(supabaseStatusUrl) + "?rfid_id=" + rfidTag;
+    http.begin(url);
+    http.addHeader("apikey", supabaseKey);
+    http.addHeader("Authorization", "Bearer " + String(supabaseKey));
+
+    int httpResponseCode = http.GET();
+    if (httpResponseCode > 0) {
+      String response = http.getString();
+      Serial.println("Status Response: " + response);
+      
+      DynamicJsonDocument doc(1024);
+      DeserializationError error = deserializeJson(doc, response);
+      if (!error && doc.containsKey("in_campus")) {
+        inCampus = doc["in_campus"].as<bool>();
+        http.end();
+        return true;
+      } else {
+        Serial.println("JSON parsing failed or no in_campus field");
+      }
+    } else {
+      Serial.println("Error on status request: " + String(httpResponseCode));
+    }
+    http.end();
+  }
+  return false;
 }
 
 // Update bus status in Supabase
 bool updateBusStatus(String rfidTag, String eventType) {
   if (WiFi.status() == WL_CONNECTED) {
     HTTPClient http;
-    
-    // Set up the HTTP client
     http.begin(supabaseUrl);
-    
-    // Set headers
     http.addHeader("Content-Type", "application/json");
     http.addHeader("apikey", supabaseKey);
     http.addHeader("Authorization", "Bearer " + String(supabaseKey));
+
+    // Get current local time in ISO 8601 format
+    time_t now;
+    time(&now);
+    struct tm* timeinfo = localtime(&now);
+    char timeStr[30];
+    strftime(timeStr, sizeof(timeStr), "%Y-%m-%dT%H:%M:%S", timeinfo);
     
-    // Create JSON payload
-    String jsonPayload = "{\"rfid_id\":\"" + rfidTag + "\",\"event_type\":\"" + eventType + "\"}";
+    String jsonPayload = "{\"rfid_id\":\"" + rfidTag + "\",\"event_type\":\"" + eventType + "\",\"timestamp\":\"" + String(timeStr) + "\"}";
     Serial.println("Sending JSON: " + jsonPayload);
     
-    // Send POST request
     int httpResponseCode = http.POST(jsonPayload);
-    
     if (httpResponseCode > 0) {
       String response = http.getString();
       Serial.println("HTTP Response code: " + String(httpResponseCode));
       Serial.println("Response: " + response);
       
-      // Create a DynamicJsonDocument to parse the response
-      DynamicJsonDocument doc(1024);  // Adjust size based on expected response
+      DynamicJsonDocument doc(1024);
       DeserializationError error = deserializeJson(doc, response);
-      
-      if (error) {
-        Serial.print("JSON parsing failed: ");
-        Serial.println(error.c_str());
-        http.end();
-        return false;
-      }
-      
-      // Check if operation was successful
-      if (doc.containsKey("success") && doc["success"].as<bool>()) {
+      if (!error && doc.containsKey("success") && doc["success"].as<bool>()) {
         Serial.println("Bus status updated successfully");
         http.end();
         return true;
       } else {
         Serial.println("API returned error");
-        serializeJson(doc, Serial);  // Print the full JSON response for debugging
+        serializeJson(doc, Serial);
         Serial.println();
-        http.end();
-        return false;
       }
     } else {
       Serial.println("Error on HTTP request: " + String(httpResponseCode));
-      http.end();
-      return false;
     }
+    http.end();
   } else {
     Serial.println("WiFi not connected");
-    return false;
   }
+  return false;
 }
 
 // Blink LED
@@ -248,8 +322,6 @@ void blinkLED(int pin, int times, int delayTime) {
     digitalWrite(pin, LOW);
     delay(delayTime);
   }
-  
-  // Return to original state
   if (pin == RED_LED_PIN) {
     digitalWrite(RED_LED_PIN, HIGH);
   }
