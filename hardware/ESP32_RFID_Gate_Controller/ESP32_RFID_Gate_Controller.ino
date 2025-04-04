@@ -1,4 +1,3 @@
-
 /*
  * IoT Bus Tracking System using ESP32, RFID and Supabase
  * 
@@ -17,17 +16,17 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include <Arduino_JSON.h>
+#include <ArduinoJson.h>
 #include <SPI.h>
 #include <MFRC522.h>
 #include <ESP32Servo.h>
 
 // Network credentials
-const char* ssid = "YOUR_WIFI_SSID";
-const char* password = "YOUR_WIFI_PASSWORD";
+const char* ssid = "SNUC";
+const char* password = "snu12345";
 
-// Supabase API endpoint - replace with your endpoint
-const char* supabaseUrl = "https://imhfvwavskweneysqrof.supabase.co/rest/v1/rpc/http_bus_entry_exit";
+// Supabase API endpoint
+const char* supabaseUrl = "https://imhfvwavskweneysqrof.supabase.co/functions/v1/http_bus_entry_exit";
 const char* supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImltaGZ2d2F2c2t3ZW5leXNxcm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDM1ODU4NDUsImV4cCI6MjA1OTE2MTg0NX0.x0zkA41Bqk0I6lDp5Uo3EYUSyil2KNPOt9iqnuKW7sI";
 
 // RFID reader pins
@@ -44,13 +43,12 @@ const char* supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 // Servo pin
 #define SERVO_PIN 13
 
-// Gate mode (entry or exit)
-// Change this depending on which gate this ESP32 is installed at
-#define GATE_MODE "entry"  // Options: "entry" or "exit"
-
 // Initialize RFID and Servo
 MFRC522 rfid(SS_PIN, RST_PIN);
 Servo gateServo;
+
+// Variable to track the last event type (for testing with a single ESP32)
+String lastEventType = "exit";  // Start with "exit" so the first scan is "entry"
 
 // Function declarations
 void connectToWiFi();
@@ -85,7 +83,6 @@ void setup() {
   closeGate(); // Ensure gate is closed on startup
   
   Serial.println("Setup complete. Ready to scan RFID tags.");
-  Serial.println("Gate Mode: " + String(GATE_MODE));
 }
 
 void loop() {
@@ -106,10 +103,15 @@ void loop() {
     
     Serial.println("RFID Tag detected: " + rfidTag);
     
+    // Toggle between "entry" and "exit" for testing
+    String currentEventType = (lastEventType == "entry") ? "exit" : "entry";
+    lastEventType = currentEventType;  // Update the last event type
+    Serial.println("Gate Mode: " + currentEventType);
+    
     // Process the RFID tag
     if (validateRFID(rfidTag)) {
       // Valid RFID, update status in Supabase
-      if (updateBusStatus(rfidTag, GATE_MODE)) {
+      if (updateBusStatus(rfidTag, currentEventType)) {
         // Success, open gate
         digitalWrite(GREEN_LED_PIN, HIGH);
         digitalWrite(RED_LED_PIN, LOW);
@@ -164,7 +166,6 @@ void connectToWiFi() {
 // Validate RFID against known tags (can be enhanced to check against a database)
 bool validateRFID(String rfidTag) {
   // For now, accept all RFID tags and let the database function validate
-  // You could add local validation logic here if needed
   return true;
 }
 
@@ -205,22 +206,26 @@ bool updateBusStatus(String rfidTag, String eventType) {
       Serial.println("HTTP Response code: " + String(httpResponseCode));
       Serial.println("Response: " + response);
       
-      // Parse the JSON response
-      JSONVar responseObj = JSON.parse(response);
+      // Create a DynamicJsonDocument to parse the response
+      DynamicJsonDocument doc(1024);  // Adjust size based on expected response
+      DeserializationError error = deserializeJson(doc, response);
       
-      if (JSON.typeof(responseObj) == "undefined") {
-        Serial.println("JSON parsing failed");
+      if (error) {
+        Serial.print("JSON parsing failed: ");
+        Serial.println(error.c_str());
         http.end();
         return false;
       }
       
       // Check if operation was successful
-      if (responseObj.hasOwnProperty("success") && responseObj["success"]) {
+      if (doc.containsKey("success") && doc["success"].as<bool>()) {
         Serial.println("Bus status updated successfully");
         http.end();
         return true;
       } else {
-        Serial.println("API returned error: " + JSON.stringify(responseObj));
+        Serial.println("API returned error");
+        serializeJson(doc, Serial);  // Print the full JSON response for debugging
+        Serial.println();
         http.end();
         return false;
       }
