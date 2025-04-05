@@ -1,81 +1,106 @@
 
-# IoT Bus Tracking System Hardware Components
+# IoT Bus Tracking System
 
-This folder contains the required code for the ESP32-based RFID gate control system for bus entry and exit points.
+## Overview
+This project implements an automated bus tracking system using ESP32, RFID technology, and Supabase backend. The system authenticates buses via RFID tags, controls a physical entry/exit gate, and maintains real-time records of bus locations.
 
-## Hardware Components Required
+## Hardware Requirements
+- ESP32 Microcontroller
+- RC522 RFID Reader
+- MG996R Servo Motor (for gate control)
+- Green and Red LEDs
+- Buzzer
+- Pushbutton (for WiFi reset)
+- Breadboard and connection wires
 
-1. **ESP32 Development Board**
-   - WiFi & Bluetooth capable microcontroller
-   - Connects to Supabase to update bus status
+## Pin Configuration
+| Component | Pin |
+|-----------|-----|
+| RFID SS   | 22  |
+| RFID RST  | 4   |
+| RFID SCK  | 19  |
+| RFID MOSI | 23  |
+| RFID MISO | 25  |
+| Green LED | 12  |
+| Red LED   | 14  |
+| Servo     | 13  |
+| Buzzer    | 15  |
+| Reset Button | 2 |
 
-2. **RFID-RC522 Reader**
-   - Reads RFID tags mounted on buses
-   - Connected to ESP32 via SPI interface
+## Software Requirements
+   - Arduino IDE
+   - Required Libraries:
+   - WiFi.h
+   - HTTPClient.h
+   - ArduinoJson.h
+   - SPI.h
+   - MFRC522.h
+   - ESP32Servo.h
+   - WebServer.h
 
-3. **Servo Motor MG996R**
-   - Controls the gate opening/closing
-   - Triggered when valid RFID is detected
+## Installation & Setup
 
-4. **LEDs**
-   - Green LED: Indicates successful authentication
-   - Red LED: Indicates standby mode or errors
+### Hardware Assembly
+1. Connect the RFID reader to the ESP32 using the SPI pins
+2. Connect the servo motor to pin 13
+3. Connect LEDs to pins 12 (green) and 14 (red)
+4. Connect the buzzer to pin 15
+5. Connect the reset button to pin 2 with a pull-up resistor
 
-5. **Miscellaneous**
-   - Breadboard and jumper wires
-   - Power supply (5V for servo, 3.3V for ESP32)
-   - RFID tags for each bus
+### Software Setup
+1. Install the Arduino IDE and ESP32 board support
+2. Install all required libraries via the Arduino Library Manager
+3. Clone this repository or download the code
+4. Open the `.ino` file in Arduino IDE
+5. Upload the code to your ESP32
 
-## Wiring Diagram
-
-### ESP32 to RFID-RC522 Connections
-- RST_PIN: GPIO4
-- SS_PIN: GPIO22 (SDA)
-- MOSI_PIN: GPIO23
-- MISO_PIN: GPIO25
-- SCK_PIN: GPIO19
-
-### ESP32 to Servo Connections
-- SERVO_PIN: GPIO13
-
-### ESP32 to LED Connections
-- GREEN_LED_PIN: GPIO12
-- RED_LED_PIN: GPIO14
-
-## Installation Instructions
-
-1. **Hardware Setup**
-   - Connect all components according to the wiring diagram
-   - Ensure proper power supply to all components
-
-2. **Software Setup**
-   - Install the Arduino IDE
-   - Add ESP32 board support to Arduino IDE
-   - Install the required libraries:
-     - WiFi.h
-     - HTTPClient.h
-     - Arduino_JSON.h
-     - SPI.h
-     - MFRC522.h
-     - ESP32Servo.h
-
-3. **Configuration**
-   - Open the ESP32_RFID_Gate_Controller.ino file
-   - Update the WiFi credentials (SSID and password)
-   - Set the correct GATE_MODE ("entry" or "exit") depending on installation location
-   - Upload the code to the ESP32
+## Initial Configuration
+1. Power on the device - it will create a WiFi access point named "CampusPro_XXXX"
+2. Connect to this network using password "12345678"
+3. Open a browser and navigate to http://192.168.4.1
+4. Enter your WiFi credentials and save
+5. The device will restart and connect to your WiFi network
 
 ## Operation
+- The system starts with the gate closed and red LED on
+- When an authorized RFID tag is detected:
+  - If it's an entry event, the gate opens
+  - If it's an exit event, the gate opens
+  - Status is updated in the Supabase database
+  - The green LED turns on while the gate is open
+- After 5 seconds, the gate closes automatically
+- The red LED returns to on state (standby)
 
-1. When powered on, the system connects to WiFi and initializes the RFID reader and servo
-2. The red LED stays on in standby mode
-3. When a bus with a valid RFID tag approaches:
-   - The RFID reader detects the tag
-   - The system validates the tag with Supabase
-   - Upon successful validation, the green LED turns on and the gate opens
-   - The gate remains open for 5 seconds, then closes
-   - The system returns to standby mode (red LED on)
-4. If there's an error or invalid tag, the red LED blinks to indicate the issue
+## Resetting WiFi Settings
+- Press and hold the reset button for 3 seconds
+- The device will restart in AP mode for reconfiguration
+
+## Indicators
+- **Red LED**: System standby or error
+- **Green LED**: Valid RFID detected, gate open
+- **Blinking Red LED**: In AP configuration mode
+- **Buzzer Patterns**:
+  - Single double-beep: WiFi connected
+  - Single short beep: Successful RFID scan
+  - Triple beep: Error
+
+## Supabase Integration
+The system uses Supabase for data storage and management:
+- Each bus entry/exit is recorded with timestamp
+- Bus status (in/out of campus) is maintained
+- Data can be accessed via Supabase dashboard or API
+
+## Troubleshooting
+- If the device cannot connect to WiFi, it will revert to AP mode
+- Check the serial monitor (115200 baud) for diagnostic information
+- Blinking red LED indicates configuration mode
+- Triple buzzer beep indicates an error condition
+
+## Extending the System
+- Modify the `validateRFID()` function to implement custom authentication rules
+- Add more sensors for enhanced security
+- Implement a display for status information
+- Expand the Supabase functions for additional analytics
 
 ## Troubleshooting
 
