@@ -14,7 +14,8 @@ import {
   ChevronUp,
   MessageSquare,
   Moon,
-  Sun
+  Sun,
+  LucideIcon
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -38,7 +39,7 @@ import { logout } from '@/redux/slices/authSlice';
 import { useTheme } from '@/components/theme-provider';
 
 type NavItemProps = {
-  icon: React.ComponentType<any>;
+  icon: LucideIcon;
   label: string;
   href: string;
   active?: boolean;
@@ -169,11 +170,20 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
           "border-[hsl(var(--sidebar-border))]",
           !sidebarOpen && "md:justify-center"
         )}>
-          <div className="bus-gradient-bg rounded-full p-2 flex-shrink-0">
+          <div 
+            className="bus-gradient-bg rounded-full p-2 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
+            onClick={() => navigate('/')}
+            title="Go to Home Page"
+          >
             <BusFront className="h-5 w-5 text-white" />
           </div>
           {sidebarOpen && (
-            <span className="ml-2 font-bold text-lg text-sidebar-foreground">Campus Bus</span>
+            <span 
+              className="ml-2 font-bold text-lg text-sidebar-foreground cursor-pointer hover:text-primary transition-colors"
+              onClick={() => navigate('/')}
+            >
+              CampusPro
+            </span>
           )}
           <Button 
             variant="ghost" 
@@ -194,6 +204,14 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
                   Main
                 </h3>
                 <div className="mt-2 space-y-1">
+                  <NavItem 
+                    key="home"
+                    icon={BusFront}
+                    label="Home"
+                    href="/"
+                    onClick={() => navigate('/')}
+                    className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                  />
                   {navItems.map((item) => (
                     <NavItem 
                       key={item.label}
@@ -213,6 +231,14 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
             </>
           ) : (
             <div className="space-y-4 flex flex-col items-center pt-4">
+              <button
+                key="home"
+                onClick={() => navigate('/')}
+                className="p-2 rounded-md text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                title="Home"
+              >
+                <BusFront className="h-5 w-5" />
+              </button>
               {navItems.map((item) => (
                 <button
                   key={item.label}
