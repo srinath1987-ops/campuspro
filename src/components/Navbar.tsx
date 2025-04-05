@@ -114,11 +114,6 @@ const Navbar = () => {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem>
-                    <Link to={getDashboardLink()} className="w-full">
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
                     <Link to={`/${profile?.role}/profile`} className="w-full">
                       Profile
                     </Link>

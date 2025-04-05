@@ -203,9 +203,18 @@ const AppContent = () => {
 };
 
 const App = () => {
+  // Add useEffect to set dark mode class on document element
+  useEffect(() => {
+    // Remove light class and add dark class
+    document.documentElement.classList.remove('light');
+    document.documentElement.classList.add('dark');
+    // Also store the preference in localStorage
+    localStorage.setItem('campus-pro-theme', 'dark');
+  }, []);
+  
   return (
     <BrowserRouter>
-      <ThemeProvider defaultTheme="light" storageKey="campus-pro-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="campus-pro-theme">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <TooltipProvider>
