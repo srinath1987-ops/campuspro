@@ -141,34 +141,19 @@ const About = () => {
           
           <div className="grid grid-cols-2 md:grid-cols-3 gap-10 max-w-4xl mx-auto">
             <TeamMemberCard 
-              name="Abhishek Singh" 
-              role="Project Lead" 
-              imageUrl="/placeholder.svg" 
+              name="V Sree Aditya" 
+              role="Backend and IoT Developer" 
+              imageUrl="https://iili.io/37TqMrX.jpg" 
             />
             <TeamMemberCard 
-              name="Priya Sharma" 
-              role="IoT Developer" 
-              imageUrl="/placeholder.svg" 
-            />
-            <TeamMemberCard 
-              name="Rajesh Kumar" 
-              role="Backend Developer" 
-              imageUrl="/placeholder.svg" 
-            />
-            <TeamMemberCard 
-              name="Ananya Mehta" 
+              name="Venkataraman TSK" 
               role="Frontend Developer" 
-              imageUrl="/placeholder.svg" 
+              imageUrl="https://iili.io/37Td3gf.jpg" 
             />
             <TeamMemberCard 
-              name="Vikram Patel" 
-              role="UI/UX Designer" 
-              imageUrl="/placeholder.svg" 
-            />
-            <TeamMemberCard 
-              name="Deepa Nair" 
-              role="QA Specialist" 
-              imageUrl="/placeholder.svg" 
+              name="Shrihari" 
+              role="Hardware Developer" 
+              imageUrl="https://iili.io/37TJqoF.jpg" 
             />
           </div>
         </div>
@@ -180,9 +165,9 @@ const About = () => {
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="text-3xl font-bold mb-6 text-foreground">Developed at</h2>
             <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 inline-block border border-border">
-              <h3 className="text-2xl font-bold mb-2 text-foreground">Sri Nandhanam College of Engineering and Technology</h3>
+              <h3 className="text-2xl font-bold mb-2 text-foreground">Shiv Nadar University Chennai</h3>
               <p className="text-muted-foreground">
-                A premier institution dedicated to innovation and excellence in engineering education
+              A leading institution committed to advancing innovation and excellence in engineering education.
               </p>
             </div>
           </div>
