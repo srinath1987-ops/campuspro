@@ -1,37 +1,49 @@
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { login, logout, signUp as reduxSignUp, fetchSession, clearError } from '@/redux/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
-type Profile = {
+// Types
+export interface Profile {
   id: string;
   full_name: string;
   role: 'admin' | 'driver' | 'user';
   avatar_url?: string;
   phone_number?: string;
-};
+}
 
-type AuthContextType = {
+interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   isLoading: boolean;
-  signUp: (email: string, password: string, fullName: string, role?: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  getUserRole: () => 'admin' | 'driver' | 'user' | null;
+  getUserRole: () => Promise<string | null>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
-};
+}
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const dispatch = useAppDispatch();
   const { user, profile, isLoading, error } = useAppSelector(state => state.auth);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [session, setSession] = useState<Session | null>(null);
   
   useEffect(() => {
     // First set up the auth state listener
@@ -70,30 +82,50 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [error, toast, dispatch]);
 
-  const updateProfile = async (updates: Partial<Profile>) => {
-    if (!user) return;
+  // Fetch session
+  useEffect(() => {
+    const getSessionData = async () => {
+      try {
+        const { data } = await supabase.auth.getSession();
+        setSession(data.session);
+      } catch (error) {
+        console.error('Error getting session:', error);
+        setSession(null);
+      }
+    };
     
+    getSessionData();
+  }, [user]);
+
+  const updateProfile = async (updates: Partial<Profile>) => {
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to update your profile',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const { error } = await supabase
         .from('profiles')
         .update(updates)
         .eq('id', user.id);
-        
+
       if (error) throw error;
-      
-      // Refresh the session to get updated profile data
-      dispatch(fetchSession());
+
+      // Refresh session to get updated profile
+      await dispatch(fetchSession()).unwrap();
       
       toast({
-        title: 'Profile Updated',
-        description: 'Your profile has been updated successfully.',
+        title: 'Success',
+        description: 'Profile updated successfully',
       });
-      
     } catch (error: any) {
-      console.error('Error updating profile:', error);
       toast({
-        title: 'Update Failed',
-        description: error.message || 'Failed to update profile.',
+        title: 'Error',
+        description: error.message || 'Failed to update profile',
         variant: 'destructive',
       });
     }
@@ -101,94 +133,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const updatePassword = async (password: string) => {
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
+      const { error } = await supabase.auth.updateUser({ password });
       
       if (error) throw error;
       
       toast({
-        title: 'Password Updated',
-        description: 'Your password has been updated successfully.',
+        title: 'Success',
+        description: 'Password updated successfully',
       });
-      
     } catch (error: any) {
-      console.error('Error updating password:', error);
       toast({
-        title: 'Update Failed',
-        description: error.message || 'Failed to update password.',
+        title: 'Error',
+        description: error.message || 'Failed to update password',
         variant: 'destructive',
       });
     }
   };
 
-  const signUp = async (
-    email: string, 
-    password: string, 
-    fullName: string,
-    role: string = 'user'
-  ) => {
-    try {
-      await dispatch(reduxSignUp({ email, password, fullName, role })).unwrap();
-      
-      toast({
-        title: 'Registration Successful',
-        description: 'Your account has been created successfully. Please check your email for verification.',
-      });
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      toast({
-        title: 'Registration Failed',
-        description: error || 'Failed to create account.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
+  const signUp = async (email: string, password: string, fullName: string, role: string) => {
+    await dispatch(reduxSignUp({ email, password, fullName, role })).unwrap();
   };
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // console.log("Attempting login for:", email);
-      await dispatch(login({ email, password })).unwrap();
-      
-      toast({
-        title: 'Login Successful',
-        description: 'Welcome back!',
-      });
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast({
-        title: 'Login Failed',
-        description: error || 'Invalid email or password.',
-        variant: 'destructive',
-      });
-      throw error;
-    }
+    await dispatch(login({ email, password })).unwrap();
   };
 
   const signOut = async () => {
     try {
+      // Set flag to indicate we're logging out (will be checked in ProtectedRoute)
+      sessionStorage.setItem('just_logged_out', 'true');
+      
+      // Clear session state immediately
+      setSession(null);
+      
+      // Trigger Redux logout which will clear all auth state
       await dispatch(logout()).unwrap();
       
-      toast({
-        title: 'Logout Successful',
-        description: 'You have been logged out.',
-      });
-    } catch (error: any) {
+      // Navigate after clearing state to prevent loading screens
+      navigate('/login', { replace: true });
+    } catch (error) {
       console.error('Logout error:', error);
-      toast({
-        title: 'Logout Failed',
-        description: error.message || 'Failed to log out.',
-        variant: 'destructive',
-      });
+      // Force navigation even on errors
+      sessionStorage.setItem('just_logged_out', 'true');
+      navigate('/login', { replace: true });
     }
   };
 
-  const getUserRole = (): 'admin' | 'driver' | 'user' | null => {
-    return profile?.role || null;
+  const getUserRole = async (): Promise<string | null> => {
+    if (!user) return null;
+    
+    if (profile) {
+      return profile.role;
+    }
+    
+    // If no profile in state yet, fetch it
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+      
+      if (error) throw error;
+      return data.role;
+    } catch (error) {
+      console.error('Error fetching user role:', error);
+      return null;
+    }
   };
 
-  // Get the current session
+  // Get the current session (for reference, not used directly in context)
   const getSession = async (): Promise<Session | null> => {
     try {
       const { data } = await supabase.auth.getSession();
@@ -198,8 +212,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return null;
     }
   };
-
-  const session = getSession();
 
   return (
     <AuthContext.Provider
@@ -219,12 +231,4 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = (): AuthContextType => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

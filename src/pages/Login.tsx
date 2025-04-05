@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import { BusFront, LogIn, UserPlus, Database } from 'lucide-react';
+import { BusFront, LogIn, UserPlus, Database, Loader2 } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -64,9 +64,12 @@ const Login = () => {
   // Effect to redirect authenticated users
   useEffect(() => {
     if (user && profile) {
-      // Get redirect URL from query params if available
+      // Try to get return URL from location state first (more reliable)
+      const returnUrl = location.state?.returnUrl;
+      
+      // Then fall back to query params
       const params = new URLSearchParams(location.search);
-      const redirectPath = params.get('redirect');
+      const redirectPath = returnUrl || params.get('redirect');
       
       if (redirectPath) {
         // Check if the redirect URL is appropriate for the user role
@@ -74,8 +77,9 @@ const Login = () => {
         const isDriverRoute = redirectPath.startsWith('/driver');
         
         if ((isAdminRoute && profile.role === 'admin') || 
-            (isDriverRoute && profile.role === 'driver')) {
-          navigate(redirectPath);
+            (isDriverRoute && profile.role === 'driver') ||
+            (!isAdminRoute && !isDriverRoute)) {
+          navigate(redirectPath, { replace: true });
           return;
         }
       }
@@ -83,7 +87,7 @@ const Login = () => {
       // If no redirect URL or inappropriate role, use default redirection
       redirectBasedOnRole(profile.role);
     }
-  }, [user, profile, location.search, navigate]);
+  }, [user, profile, location.search, location.state, navigate]);
 
   const redirectBasedOnRole = (role: string) => {
     if (role === 'admin') {
@@ -95,13 +99,15 @@ const Login = () => {
 
   const onSubmit = async (values: LoginValues) => {
     try {
-      // console.log("Attempting to sign in:", values.email);
-      // Use the Redux action instead of the context function
       await dispatch(login({ email: values.email, password: values.password })).unwrap();
+      toast({
+        title: "Login Successful",
+        description: "Welcome back to CampusPro!"
+      });
       // Navigation is handled in the useEffect above when user/profile is updated
-    } catch (error) {
+    } catch (error: any) {
+      // Error handling is done through Redux, but we can add additional feedback here
       console.error('Login error:', error);
-      // Error display is now handled through Redux state
     }
   };
 
@@ -174,7 +180,7 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your email" type="email" {...field} />
+                          <Input placeholder="Enter your email" type="email" {...field} disabled={isLoading} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -187,7 +193,7 @@ const Login = () => {
                       <FormItem>
                         <FormLabel>Password</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your password" type="password" {...field} />
+                          <Input placeholder="Enter your password" type="password" {...field} disabled={isLoading} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -201,11 +207,8 @@ const Login = () => {
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Loading...
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        Signing In...
                       </span>
                     ) : (
                       <span className="flex items-center justify-center">
@@ -218,7 +221,7 @@ const Login = () => {
               
               {/* Display error from Redux state */}
               {error && (
-                <div className="text-sm text-red-500 font-medium p-2 bg-red-50 border border-red-200 rounded">
+                <div className="text-sm text-red-500 font-medium p-3 bg-red-50 border border-red-200 rounded">
                   {error}
                 </div>
               )}

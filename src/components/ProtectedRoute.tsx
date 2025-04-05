@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { fetchSession } from '@/redux/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -21,74 +21,114 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [initializing, setInitializing] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
   
-  // Try to refresh session on mount or when route changes
+  // Check if we're in a logout process using URL or session storage
   useEffect(() => {
+    // If we're coming from a logout action, skip loading state
+    const isJustLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
+    if (isJustLoggedOut) {
+      setLoggingOut(true);
+      sessionStorage.removeItem('just_logged_out');
+      navigate('/login', { replace: true });
+      return;
+    }
+  }, [navigate]);
+  
+  // Try to refresh session on mount
+  useEffect(() => {
+    let isMounted = true;
+    
     const checkSession = async () => {
-      if (!user) {
+      if (!user && !loggingOut) {
         try {
           await dispatch(fetchSession()).unwrap();
         } catch (err) {
-          // Session fetch failed, will be handled by the render logic
+          console.error("Session fetch failed:", err);
         } finally {
-          setInitializing(false);
+          if (isMounted) {
+            setInitializing(false);
+          }
         }
       } else {
-        setInitializing(false);
+        if (isMounted) {
+          setInitializing(false);
+        }
       }
     };
     
     checkSession();
-  }, [dispatch, user, location.pathname]);
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [dispatch, user, loggingOut]);
   
+  // Handle authentication notifications and redirects
   useEffect(() => {
-    // Only show toast messages when we've confirmed the user is not authenticated
-    // and after the initial session check
-    if (!isLoading && !initializing && !user) {
-      toast({
-        title: "Authentication required",
-        description: "Please log in to access this page.",
-        variant: "destructive"
-      });
-    } else if (!isLoading && !initializing && user && allowedRole && profile?.role !== allowedRole) {
-      toast({
-        title: "Access restricted",
-        description: `This page is only accessible to ${allowedRole}s.`,
-        variant: "destructive"
-      });
+    // Only process when we're done loading and not logging out
+    if (!isLoading && !initializing && !loggingOut) {
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to access this page.",
+          variant: "destructive"
+        });
+        
+        // Force navigation to login page
+        navigate('/login', {
+          replace: true,
+          state: { returnUrl: location.pathname }
+        });
+      } else if (allowedRole && profile?.role !== allowedRole) {
+        toast({
+          title: "Access restricted",
+          description: `This page is only accessible to ${allowedRole}s.`,
+          variant: "destructive"
+        });
+        
+        // Redirect based on user role
+        if (profile?.role === 'admin') {
+          navigate('/admin/dashboard', { replace: true });
+        } else if (profile?.role === 'driver') {
+          navigate('/driver/dashboard', { replace: true });
+        } else {
+          navigate('/', { replace: true });
+        }
+      }
     }
-  }, [isLoading, initializing, user, toast, allowedRole, profile, location.pathname]);
+  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate]);
+
+  // If we're logging out, don't show loading indicator
+  if (loggingOut) {
+    return null;
+  }
 
   // Show loading indicator while auth state is initializing
   if (isLoading || initializing) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading your session...</p>
+        </div>
       </div>
     );
   }
 
-  // If not authenticated, redirect to login with return URL
-  if (!user) {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+  // If not authenticated or wrong role, handle via useEffect
+  if (!user || (allowedRole && profile?.role !== allowedRole)) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="text-muted-foreground">Checking your permissions...</p>
+        </div>
+      </div>
+    );
   }
   
-  // If a specific role is required and user doesn't have it
-  if (allowedRole && profile?.role !== allowedRole) {
-    // Redirect admin to admin dashboard
-    if (profile?.role === 'admin') {
-      return <Navigate to="/admin/dashboard" replace />;
-    }
-    
-    // Redirect driver to driver dashboard
-    if (profile?.role === 'driver') {
-      return <Navigate to="/driver/dashboard" replace />;
-    }
-    
-    // If profile isn't loaded yet or role isn't recognized
-    return <Navigate to="/login" replace />;
-  }
-  
+  // User is authenticated and has correct role
   return <>{children}</>;
 };
 

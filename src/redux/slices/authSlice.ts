@@ -101,12 +101,31 @@ export const signUp = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue }) => {
+export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue, dispatch }) => {
   try {
+    // Clear local storage first
+    localStorage.removeItem('supabase.auth.token');
+    sessionStorage.clear();
+    
+    // Clear any auth-related items in local storage
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.includes('supabase') || key.includes('auth'))) {
+        localStorage.removeItem(key);
+      }
+    }
+    
+    // Reset auth state in Redux immediately to prevent loading screens
+    dispatch(resetAuthState());
+    
+    // Then sign out from Supabase
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    
     return null;
   } catch (error: any) {
+    // Even on error, ensure state is reset
+    dispatch(resetAuthState());
     return rejectWithValue(error.message);
   }
 });
@@ -144,6 +163,10 @@ const authSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    resetAuthState: () => {
+      // Reset to initial state
+      return { ...initialState };
+    },
   },
   extraReducers: (builder) => {
     // Login
@@ -178,17 +201,16 @@ const authSlice = createSlice({
     
     // Logout
     builder.addCase(logout.pending, (state) => {
-      state.isLoading = true;
-      state.error = null;
+      // Reset state immediately to prevent loading screens
+      return { ...initialState };
     });
-    builder.addCase(logout.fulfilled, (state) => {
-      state.isLoading = false;
-      state.user = null;
-      state.profile = null;
+    builder.addCase(logout.fulfilled, () => {
+      // Reset to initial state completely
+      return { ...initialState };
     });
     builder.addCase(logout.rejected, (state, action) => {
-      state.isLoading = false;
-      state.error = action.payload as string;
+      // Even on error, return initial state
+      return { ...initialState, error: action.payload as string };
     });
     
     // Fetch Session
@@ -208,5 +230,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { clearError } = authSlice.actions;
+export const { clearError, resetAuthState } = authSlice.actions;
 export default authSlice.reducer; 

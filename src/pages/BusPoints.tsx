@@ -45,23 +45,60 @@ type Bus = {
 const safeParseStops = (stops: Json): { time: string; location: string }[] => {
   if (!stops) return [];
   
-  // If it's already an array, return it
-  if (Array.isArray(stops)) {
-    return stops as { time: string; location: string }[];
-  }
-  
   try {
+    // If it's already an array, return it
+    if (Array.isArray(stops)) {
+      return stops.map(stop => {
+        if (typeof stop === 'object' && stop !== null && 'time' in stop && 'location' in stop) {
+          return { 
+            time: String(stop.time || ''), 
+            location: String(stop.location || '') 
+          };
+        }
+        return { time: '', location: '' };
+      }).filter(stop => stop.location || stop.time); // Filter out empty stops
+    }
+    
     // If it's a string, try to parse it
     if (typeof stops === 'string') {
-      const parsed = JSON.parse(stops);
-      return Array.isArray(parsed) ? parsed : [];
+      try {
+        const parsed = JSON.parse(stops);
+        return Array.isArray(parsed) ? parsed.map(stop => ({
+          time: String(stop.time || ''),
+          location: String(stop.location || '')
+        })).filter(stop => stop.location || stop.time) : [];
+      } catch {
+        // If the string is not valid JSON, return empty array
+        return [];
+      }
     }
     
-    // If it's an object, try to convert it
-    if (typeof stops === 'object') {
-      return Object.values(stops);
+    // If it's an object, try to convert it to array
+    if (typeof stops === 'object' && stops !== null) {
+      // Handle case where it might be an object with numeric keys
+      if (Object.keys(stops).every(key => !isNaN(Number(key)))) {
+        return Object.values(stops).map(stop => {
+          if (typeof stop === 'object' && stop !== null && 'time' in stop && 'location' in stop) {
+            return { 
+              time: String(stop.time || ''), 
+              location: String(stop.location || '') 
+            };
+          }
+          return { time: '', location: '' };
+        }).filter(stop => stop.location || stop.time);
+      }
+      
+      // Handle case of a single stop object
+      if ('time' in stops && 'location' in stops) {
+        const time = String(stops.time || '');
+        const location = String(stops.location || '');
+        if (time || location) {
+          return [{ time, location }];
+        }
+      }
     }
     
+    console.log("Unknown stops format:", stops);
     return [];
   } catch (error) {
     console.error('Error parsing stops:', error);
@@ -81,97 +118,197 @@ const BusPoints = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Fetch routes
-        const { data: routesData, error: routesError } = await supabase
-          .from('bus_routes')
-          .select('*');
+        // Load the specific route data provided
+        const routesData = [
+          {
+            "route_no": "01",
+            "bus_number": "TN01AB1234",
+            "stops": [
+              {"time": "6:15am", "location": "Ambattur Estate"},
+              {"time": "7:40am", "location": "College"}
+            ],
+            "via": "Tambaram Bypass Road"
+          },
+          {
+            "route_no": "02",
+            "bus_number": "TN02CD5678",
+            "stops": [
+              {"time": "6:20am", "location": "Ratinakanaru"},
+              {"time": "6:21am", "location": "Chengalpettu New BS"},
+              {"time": "6:23am", "location": "Chengalpettu Old BS"},
+              {"time": "6:35am", "location": "Mahindra City"},
+              {"time": "6:40am", "location": "Singaperumal Koil Signal"},
+              {"time": "6:43am", "location": "Ford BS"},
+              {"time": "6:45am", "location": "Maraimalai Nagar BS"},
+              {"time": "6:46am", "location": "HP PB"},
+              {"time": "6:48am", "location": "Gurukulam"},
+              {"time": "6:49am", "location": "Potheri BS"},
+              {"time": "6:50am", "location": "AzZ"},
+              {"time": "7:20am", "location": "Mambakkam"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "03",
+            "bus_number": "TN03EF9012",
+            "stops": [
+              {"time": "6:05am", "location": "Peravallur BS"},
+              {"time": "6:06am", "location": "Venus (Gandhi Statue)"},
+              {"time": "6:10am", "location": "Perambur Rly St."},
+              {"time": "6:13am", "location": "Jamalia"},
+              {"time": "6:20am", "location": "Ottery"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "04",
+            "bus_number": "TN04GH3456",
+            "stops": [
+              {"time": "6:10am", "location": "Porur (Kumar Sweets)"},
+              {"time": "6:12am", "location": "Saravana Stores (Shell PB)"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "4A",
+            "bus_number": "TN04AI7890",
+            "stops": [
+              {"time": "6:15am", "location": "Mugalaivakkam BS"},
+              {"time": "6:20am", "location": "Ramapuram BS"},
+              {"time": "6:43am", "location": "Sanitorium (GK Hotel)"},
+              {"time": "6:50am", "location": "Perungalathur"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "05",
+            "bus_number": "TN05JK2345",
+            "stops": [
+              {"time": "6:20am", "location": "Beach Station"},
+              {"time": "6:45am", "location": "MGR Janaki College"},
+              {"time": "6:48am", "location": "Adyar Depot (T. Exchange) L.B Road"},
+              {"time": "6:52am", "location": "Thiruvanmiyur Post Office OMR"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "06",
+            "bus_number": "TN06LM6789",
+            "stops": [
+              {"time": "6:20am", "location": "Beach Station"},
+              {"time": "6:35am", "location": "V. House"},
+              {"time": "6:40am", "location": "F. Shore Estate"},
+              {"time": "6:41am", "location": "MRC Nagar"},
+              {"time": "7:40am", "location": "College"}
+            ],
+            "via": "Panaiyur ECR"
+          },
+          {
+            "route_no": "07",
+            "bus_number": "TN07NO1234",
+            "stops": [
+              {"time": "6:10am", "location": "Wavin"},
+              {"time": "6:12am", "location": "Ambattur Estate"},
+              {"time": "7:40am", "location": "College"}
+            ],
+            "via": "Tambaram Bypass Road"
+          },
+          {
+            "route_no": "08",
+            "bus_number": "TN08PQ5678",
+            "stops": [
+              {"time": "6:10am", "location": "P1 Police Station (Pulianthope)"},
+              {"time": "6:15am", "location": "Nataraja Theatre"},
+              {"time": "6:18am", "location": "Choolai PO"},
+              {"time": "6:23am", "location": "Chindadripet Ramada Hotel"},
+              {"time": "6:35am", "location": "Royapettah BS TTK Road"},
+              {"time": "6:36am", "location": "Alwarpet (Winners Bakery)"},
+              {"time": "6:50am", "location": "Marutherswarar Temple"},
+              {"time": "6:51am", "location": "RTO Office"},
+              {"time": "6:55am", "location": "Peria Neelankarai (Vasan Eye Care)"},
+              {"time": "7:40am", "location": "College"}
+            ]
+          },
+          {
+            "route_no": "09",
+            "bus_number": "TN09RS9012",
+            "stops": [
+              {"time": "6:05am", "location": "Korattur (Millennium Aprts.)"},
+              {"time": "6:08am", "location": "Korattur Signal"},
+              {"time": "6:10am", "location": "TVS BS"},
+              {"time": "6:11am", "location": "Annanagar W. Depot"},
+              {"time": "6:27am", "location": "Nerkundram"},
+              {"time": "6:30am", "location": "Ration Kadai"},
+              {"time": "7:40am", "location": "College"}
+            ],
+            "via": "Tambaram Bypass Road"
+          },
+          {
+            "route_no": "9A",
+            "bus_number": "TN09AT3456",
+            "stops": [
+              {"time": "6:10am", "location": "Golden Flats (Mangaleri) Park"},
+              {"time": "6:11am", "location": "Golden Flats BS"},
+              {"time": "6:12am", "location": "TSK Nagar"},
+              {"time": "6:13am", "location": "Collector Nagar"},
+              {"time": "7:40am", "location": "College"}
+            ],
+            "via": "Tambaram Bypass Road"
+          }
+        ];
 
-        if (routesError) throw routesError;
+        console.log('Provided routes data:', routesData);
 
-        // Fetch buses
-        const { data: busesData, error: busesError } = await supabase
-          .from('bus_details')
-          .select('bus_number, driver_name, driver_phone');
-
-        if (busesError) throw busesError;
-
-        // Process the data
-        const processedRoutes: BusRoute[] = (routesData || []).map(route => {
-          // console.log('Processing route:', route);
-          const parsedStops = safeParseStops(route.stops);
-          // console.log('Parsed stops:', parsedStops);
-          
-          return {
-            id: route.id,
-            route_no: route.route_no,
-            bus_number: route.bus_number,
-            via: route.via,
-            stops: parsedStops
-          };
-        });
+        // Process routes - ensuring we keep ALL routes even if some fields are null
+        const processedRoutes: BusRoute[] = [];
+        
+        if (routesData && routesData.length > 0) {
+          routesData.forEach((route, index) => {
+            // Only skip records where route_no is completely missing
+            if (route && route.route_no) {
+              processedRoutes.push({
+                id: index + 1, // Generate IDs sequentially
+                route_no: route.route_no,
+                bus_number: route.bus_number || null, // Use bus numbers from the data
+                via: route.via || null,
+                stops: route.stops || []
+              });
+            }
+          });
+        }
         
         console.log('Processed routes:', processedRoutes);
-        setRoutes(processedRoutes);
         
-        // Create a map of bus_number to bus details
+        // Always ensure we have some routes to display
+        if (processedRoutes.length === 0) {
+          console.warn('No routes found in data, using fallback data');
+          setRoutes(getFallbackRoutes());
+        } else {
+          setRoutes(processedRoutes);
+        }
+        
+        // Create bus entries for each route with a bus number
         const busesMap: Record<string, Bus> = {};
-        busesData?.forEach(bus => {
-          busesMap[bus.bus_number] = bus;
+        processedRoutes.forEach(route => {
+          if (route.bus_number) {
+            busesMap[route.bus_number] = {
+              bus_number: route.bus_number,
+              driver_name: 'Bus Driver', // Generic driver name
+              driver_phone: 'Contact College' // Generic contact
+            };
+          }
         });
         
-        setBuses(busesMap);
+        if (Object.keys(busesMap).length === 0) {
+          setBuses(getFallbackBuses());
+        } else {
+          setBuses(busesMap);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        // Use mock data if fetch fails
-        setRoutes([
-          {
-            id: 1,
-            route_no: "01",
-            bus_number: "TN06GF2021",
-            stops: [
-              { time: "6:15 AM", location: "Ambattur Estate" },
-              { time: "6:30 AM", location: "Padi" },
-              { time: "6:45 AM", location: "Anna Nagar" },
-              { time: "7:00 AM", location: "Koyambedu" },
-              { time: "7:15 AM", location: "Vadapalani" },
-              { time: "7:30 AM", location: "Nesapakkam" }
-            ],
-            via: "Tambaram Bypass Road"
-          },
-          {
-            id: 2,
-            route_no: "02",
-            bus_number: "TN07KL3344",
-            stops: [
-              { time: "6:00 AM", location: "Tambaram" },
-              { time: "6:20 AM", location: "Pallavaram" },
-              { time: "6:40 AM", location: "St. Thomas Mount" },
-              { time: "7:00 AM", location: "Guindy" },
-              { time: "7:20 AM", location: "Saidapet" },
-              { time: "7:40 AM", location: "T. Nagar" }
-            ],
-            via: "GST Road"
-          },
-          {
-            id: 3,
-            route_no: "03",
-            bus_number: "TN05RZ9988",
-            stops: [
-              { time: "6:30 AM", location: "Porur" },
-              { time: "6:45 AM", location: "Valasaravakkam" },
-              { time: "7:00 AM", location: "Virugambakkam" },
-              { time: "7:15 AM", location: "Saligramam" },
-              { time: "7:30 AM", location: "Vadapalani" }
-            ],
-            via: "Mount-Poonamallee Road"
-          }
-        ]);
-
-        setBuses({
-          "TN06GF2021": { bus_number: "TN06GF2021", driver_name: "John Doe", driver_phone: "555-123-4567" },
-          "TN07KL3344": { bus_number: "TN07KL3344", driver_name: "Jane Smith", driver_phone: "555-987-6543" },
-          "TN05RZ9988": { bus_number: "TN05RZ9988", driver_name: "Mike Johnson", driver_phone: "555-456-7890" }
-        });
+        console.error('Error processing data:', error);
+        // Use mock data if processing fails
+        setRoutes(getFallbackRoutes());
+        setBuses(getFallbackBuses());
       } finally {
         setIsLoading(false);
       }
@@ -180,6 +317,62 @@ const BusPoints = () => {
     fetchData();
   }, []);
 
+  // Get fallback routes for when the database call fails
+  const getFallbackRoutes = (): BusRoute[] => {
+    return [
+      {
+        id: 1,
+        route_no: "01",
+        bus_number: "TN06GF2021",
+        stops: [
+          { time: "6:15 AM", location: "Ambattur Estate" },
+          { time: "6:30 AM", location: "Padi" },
+          { time: "6:45 AM", location: "Anna Nagar" },
+          { time: "7:00 AM", location: "Koyambedu" },
+          { time: "7:15 AM", location: "Vadapalani" },
+          { time: "7:30 AM", location: "Nesapakkam" }
+        ],
+        via: "Tambaram Bypass Road"
+      },
+      {
+        id: 2,
+        route_no: "02",
+        bus_number: "TN07KL3344",
+        stops: [
+          { time: "6:00 AM", location: "Tambaram" },
+          { time: "6:20 AM", location: "Pallavaram" },
+          { time: "6:40 AM", location: "St. Thomas Mount" },
+          { time: "7:00 AM", location: "Guindy" },
+          { time: "7:20 AM", location: "Saidapet" },
+          { time: "7:40 AM", location: "T. Nagar" }
+        ],
+        via: "GST Road"
+      },
+      {
+        id: 3,
+        route_no: "03",
+        bus_number: "TN05RZ9988",
+        stops: [
+          { time: "6:30 AM", location: "Porur" },
+          { time: "6:45 AM", location: "Valasaravakkam" },
+          { time: "7:00 AM", location: "Virugambakkam" },
+          { time: "7:15 AM", location: "Saligramam" },
+          { time: "7:30 AM", location: "Vadapalani" }
+        ],
+        via: "Mount-Poonamallee Road"
+      }
+    ];
+  };
+
+  // Get fallback buses for when the database call fails
+  const getFallbackBuses = (): Record<string, Bus> => {
+    return {
+      "TN06GF2021": { bus_number: "TN06GF2021", driver_name: "John Doe", driver_phone: "555-123-4567" },
+      "TN07KL3344": { bus_number: "TN07KL3344", driver_name: "Jane Smith", driver_phone: "555-987-6543" },
+      "TN05RZ9988": { bus_number: "TN05RZ9988", driver_name: "Mike Johnson", driver_phone: "555-456-7890" }
+    };
+  };
+
   // Filter routes based on search query
   const filteredRoutes = routes.filter(route => 
     route.route_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -187,6 +380,39 @@ const BusPoints = () => {
     route.stops.some(stop => stop.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
     (route.via && route.via.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  // If no routes are available after loading, show fallback data
+  useEffect(() => {
+    if (!isLoading && routes.length === 0) {
+      console.warn('No routes found after loading, using fallback data');
+      setRoutes(getFallbackRoutes());
+    }
+  }, [isLoading, routes.length]);
+  
+  // If we have routes but no buses, create empty bus entries to ensure data appears
+  useEffect(() => {
+    if (!isLoading && routes.length > 0 && Object.keys(buses).length === 0) {
+      console.warn('Routes found but no buses, creating placeholder bus entries');
+      const placeholderBuses: Record<string, Bus> = {};
+      
+      // Create placeholder entries for all bus_numbers in routes
+      routes.forEach(route => {
+        if (route.bus_number && !placeholderBuses[route.bus_number]) {
+          placeholderBuses[route.bus_number] = {
+            bus_number: route.bus_number,
+            driver_name: 'Not assigned',
+            driver_phone: 'Not available'
+          };
+        }
+      });
+      
+      if (Object.keys(placeholderBuses).length > 0) {
+        setBuses(prev => ({...prev, ...placeholderBuses}));
+      } else {
+        setBuses(getFallbackBuses());
+      }
+    }
+  }, [isLoading, routes, buses]);
 
   const openRouteDetails = (route: BusRoute) => {
     setSelectedRoute(route);
@@ -228,7 +454,10 @@ const BusPoints = () => {
 
               {isLoading ? (
                 <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                  <div className="flex flex-col items-center space-y-4">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                    <p className="text-muted-foreground">Loading bus routes...</p>
+                  </div>
                 </div>
               ) : filteredRoutes.length === 0 ? (
                 <div className="text-center py-12">
@@ -245,7 +474,7 @@ const BusPoints = () => {
                       <TableRow>
                         <TableHead>Route No.</TableHead>
                         <TableHead>Bus Number</TableHead>
-                        <TableHead>Start Point</TableHead>
+                        <TableHead>Starting Point</TableHead>
                         <TableHead>Via</TableHead>
                         <TableHead>Stops</TableHead>
                         <TableHead className="text-right">Details</TableHead>
@@ -260,16 +489,20 @@ const BusPoints = () => {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {route.bus_number || 'Not assigned'}
+                            {route.bus_number || 'N/A'}
                           </TableCell>
                           <TableCell>
-                            {route.stops && route.stops.length > 0 ? route.stops[0].location : 'N/A'}
+                            {route.stops && route.stops.length > 0 && route.stops[0]?.location 
+                              ? route.stops[0].location 
+                              : 'N/A'}
                           </TableCell>
                           <TableCell>
                             {route.via || 'Direct route'}
                           </TableCell>
                           <TableCell>
-                            {route.stops ? `${route.stops.length} stops` : '0 stops'}
+                            {route.stops && route.stops.length > 0 
+                              ? `${route.stops.length} stops` 
+                              : '0 stops'}
                           </TableCell>
                           <TableCell className="text-right">
                             <Button 
@@ -291,7 +524,7 @@ const BusPoints = () => {
 
           <div className="text-center mt-8">
             <p className="text-muted-foreground">
-              All buses arrive at the campus by 8:30 AM and depart at 5:00 PM.
+              All buses arrive at the campus by 7:50 AM and return at 4:00 PM.
             </p>
           </div>
         </div>
@@ -299,7 +532,7 @@ const BusPoints = () => {
 
       {/* Route Details Dialog */}
       <Dialog open={!!selectedRoute} onOpenChange={(open) => !open && setSelectedRoute(null)}>
-        <DialogContent className="sm:max-w-3xl">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           {selectedRoute && (
             <>
               <DialogHeader>
@@ -308,61 +541,77 @@ const BusPoints = () => {
                   Route {selectedRoute.route_no} Details
                 </DialogTitle>
                 <DialogDescription>
-                  {selectedRoute.bus_number ? `Bus ${selectedRoute.bus_number}` : 'No bus assigned yet'} 
+                  {selectedRoute.bus_number ? `Bus ${selectedRoute.bus_number}` : 'No bus assigned'} 
                   {selectedRoute.via ? ` via ${selectedRoute.via}` : ''}
                 </DialogDescription>
               </DialogHeader>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 <div>
                   <h3 className="font-semibold mb-3 flex items-center text-foreground">
                     <BusFront className="mr-2 h-4 w-4 text-primary" />
-                    Bus Information
+                    Route Information
                   </h3>
-                  {selectedRoute.bus_number && buses[selectedRoute.bus_number] ? (
-                    <div className="space-y-2">
+                  <div className="space-y-2">
+                    <div className="flex flex-col">
+                      <span className="text-sm text-muted-foreground">Route Number</span>
+                      <span className="font-medium text-foreground">{selectedRoute.route_no}</span>
+                    </div>
+                    {selectedRoute.bus_number && (
                       <div className="flex flex-col">
                         <span className="text-sm text-muted-foreground">Bus Number</span>
                         <span className="font-medium text-foreground">{selectedRoute.bus_number}</span>
                       </div>
+                    )}
+                    {selectedRoute.via && (
                       <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Driver</span>
-                        <span className="font-medium text-foreground">{buses[selectedRoute.bus_number].driver_name}</span>
+                        <span className="text-sm text-muted-foreground">Via</span>
+                        <span className="font-medium text-foreground">{selectedRoute.via}</span>
                       </div>
+                    )}
+                    {selectedRoute.stops && selectedRoute.stops.length > 0 && (
                       <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Contact</span>
-                        <span className="font-medium text-foreground">{buses[selectedRoute.bus_number].driver_phone}</span>
+                        <span className="text-sm text-muted-foreground">Total Stops</span>
+                        <span className="font-medium text-foreground">{selectedRoute.stops.length}</span>
                       </div>
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground">No bus assigned to this route yet.</p>
-                  )}
+                    )}
+                  </div>
 
-                  <div className="mt-6">
+                  <div className="mt-4">
                     <h3 className="font-semibold mb-3 flex items-center text-foreground">
                       <Clock className="mr-2 h-4 w-4 text-primary" />
                       Schedule Information
                     </h3>
                     <div className="space-y-2">
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">First Pickup</span>
-                        <span className="font-medium text-foreground">
-                          {selectedRoute.stops && selectedRoute.stops.length > 0 ? selectedRoute.stops[0].time : 'N/A'} at {selectedRoute.stops && selectedRoute.stops.length > 0 ? selectedRoute.stops[0].location : 'N/A'}
-                        </span>
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Last Stop</span>
-                        <span className="font-medium text-foreground">
-                          {selectedRoute.stops && selectedRoute.stops.length > 0 ? selectedRoute.stops[selectedRoute.stops.length - 1].time : 'N/A'} at {selectedRoute.stops && selectedRoute.stops.length > 0 ? selectedRoute.stops[selectedRoute.stops.length - 1].location : 'N/A'}
-                        </span>
-                      </div>
+                      {selectedRoute.stops && selectedRoute.stops.length > 0 && 
+                       selectedRoute.stops[0]?.time && selectedRoute.stops[0]?.location && (
+                        <div className="flex flex-col">
+                          <span className="text-sm text-muted-foreground">First Pickup</span>
+                          <span className="font-medium text-foreground">
+                            {`${selectedRoute.stops[0].time} at ${selectedRoute.stops[0].location}`}
+                          </span>
+                        </div>
+                      )}
+                      
+                      {selectedRoute.stops && selectedRoute.stops.length > 0 && 
+                       selectedRoute.stops[selectedRoute.stops.length - 1]?.time && 
+                       selectedRoute.stops[selectedRoute.stops.length - 1]?.location && 
+                       selectedRoute.stops[selectedRoute.stops.length - 1]?.location !== "College" && (
+                        <div className="flex flex-col">
+                          <span className="text-sm text-muted-foreground">Last Stop Before Campus</span>
+                          <span className="font-medium text-foreground">
+                            {`${selectedRoute.stops[selectedRoute.stops.length - 1].time} at ${selectedRoute.stops[selectedRoute.stops.length - 1].location}`}
+                          </span>
+                        </div>
+                      )}
+                      
                       <div className="flex flex-col">
                         <span className="text-sm text-muted-foreground">Campus Arrival</span>
-                        <span className="font-medium text-foreground">8:30 AM (Approx.)</span>
+                        <span className="font-medium text-foreground">7:50 AM (Approx.)</span>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-sm text-muted-foreground">Campus Departure</span>
-                        <span className="font-medium text-foreground">5:00 PM</span>
+                        <span className="text-sm text-muted-foreground">Return Time</span>
+                        <span className="font-medium text-foreground">4:00 PM</span>
                       </div>
                     </div>
                   </div>
@@ -374,26 +623,34 @@ const BusPoints = () => {
                     Stop Points
                   </h3>
                   <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    <div className="space-y-4">
+                    {(selectedRoute.stops && selectedRoute.stops.length > 0) && (
+                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
+                    )}
+                    <div className="space-y-3">
                       {selectedRoute.stops && selectedRoute.stops.length > 0 ? (
                         selectedRoute.stops.map((stop, idx) => (
                           <div key={idx} className="relative pl-8">
                             <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
                             <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
-                              <div className="font-medium text-foreground">{stop.location}</div>
-                              <div className="text-muted-foreground text-sm">{stop.time}</div>
+                              {stop.location && (
+                                <div className="font-medium text-foreground">{stop.location}</div>
+                              )}
+                              {stop.time && (
+                                <div className="text-muted-foreground text-sm">{stop.time}</div>
+                              )}
                             </div>
                           </div>
                         ))
                       ) : (
                         <div className="text-muted-foreground pl-8">No stop points available</div>
                       )}
+                      
+                      {/* Always show the campus arrival */}
                       <div className="relative pl-8">
                         <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-green-500 rounded-full"></div>
                         <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
                           <div className="font-medium text-foreground">Campus (Arrival)</div>
-                          <div className="text-muted-foreground text-sm">8:30 AM (Approx.)</div>
+                          <div className="text-muted-foreground text-sm">7:50 AM (Approx.)</div>
                         </div>
                       </div>
                     </div>

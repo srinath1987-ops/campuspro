@@ -34,8 +34,8 @@ import {
 } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { useAppDispatch, useAppSelector } from '@/redux/hooks';
-import { logout } from '@/redux/slices/authSlice';
+import { useAppSelector } from '@/redux/hooks';
+import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/components/theme-provider';
 
 type NavItemProps = {
@@ -108,9 +108,9 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const dispatch = useAppDispatch();
   const { profile } = useAppSelector(state => state.auth);
   const { theme, setTheme } = useTheme();
+  const { signOut } = useAuth();
   
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
@@ -121,18 +121,17 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
 
   const handleLogout = async () => {
     try {
-      await dispatch(logout()).unwrap();
-      navigate('/login');
-      toast({
-        title: 'Logged Out',
-        description: 'You have been logged out successfully.',
-      });
+      await signOut();
+      // Navigation is handled in signOut
     } catch (error) {
+      console.error('Error logging out:', error);
       toast({
         title: 'Error',
         description: 'Failed to log out. Please try again.',
         variant: 'destructive',
       });
+      // Try to navigate anyway
+      navigate('/login', { replace: true });
     }
   };
 

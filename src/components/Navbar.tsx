@@ -66,8 +66,14 @@ const Navbar = () => {
   }, [user, profile, isLoading]);
   
   const handleLogout = async () => {
-    await signOut();
-    navigate('/login');
+    try {
+      await signOut();
+      // Navigation is now handled in signOut
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // If signOut fails, try to navigate anyway
+      navigate('/login', { replace: true });
+    }
   };
 
   const getDashboardLink = () => {

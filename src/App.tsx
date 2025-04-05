@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { useEffect } from "react";
-import { useAppDispatch } from "./redux/hooks";
+import { useEffect, useState } from "react";
+import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import { fetchSession } from "./redux/slices/authSlice";
 import { ThemeProvider } from "./components/theme-provider";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -27,6 +27,7 @@ import DriverDashboard from "./pages/driver/Dashboard";
 import DriverProfile from "./pages/driver/Profile";
 import DriverSettings from "./pages/driver/Settings";
 import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -39,13 +40,26 @@ const queryClient = new QueryClient({
 
 const AppContent = () => {
   const dispatch = useAppDispatch();
+  const { user, isLoading } = useAppSelector(state => state.auth);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [appInitialized, setAppInitialized] = useState(false);
 
   // Initialize auth session on app start
   useEffect(() => {
-    dispatch(fetchSession());
+    const initializeApp = async () => {
+      try {
+        await dispatch(fetchSession()).unwrap();
+      } catch (error) {
+        console.error("Error initializing session:", error);
+      } finally {
+        setAppInitialized(true);
+      }
+    };
+    
+    initializeApp();
     
     // Set up periodic session check to prevent disconnections
-    // This helps prevent the page from randomly reloading due to session issues
     const sessionCheckInterval = setInterval(() => {
       dispatch(fetchSession());
     }, 5 * 60 * 1000); // Check every 5 minutes
@@ -55,130 +69,155 @@ const AppContent = () => {
     };
   }, [dispatch]);
 
+  // Redirect to login page if session is lost, except for public routes
+  useEffect(() => {
+    if (!appInitialized) return;
+    
+    const publicRoutes = ['/', '/about', '/features', '/bus-points', '/feedback', '/login', '/signup'];
+    const isPublicRoute = publicRoutes.some(route => location.pathname === route);
+    
+    if (!isLoading && !user && !isPublicRoute) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, isLoading, navigate, location.pathname, appInitialized]);
+
+  // Show loading indicator while app is initializing
+  if (isLoading && !appInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-10 w-10 animate-spin text-primary" />
+          <p className="text-muted-foreground">Loading CampusPro...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/bus-points" element={<BusPoints />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        
-        {/* Admin Routes */}
-        <Route 
-          path="/admin/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/profile" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminProfile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/settings" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminSettings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/drivers" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDrivers />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/buses" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminBuses />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/reports" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminReports />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/buses/add" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AddBus />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin" 
-          element={<Navigate to="/admin/dashboard" replace />} 
-        />
-        
-        {/* Driver Routes */}
-        <Route 
-          path="/driver/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver/profile" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverProfile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver/settings" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverSettings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver" 
-          element={<Navigate to="/driver/dashboard" replace />} 
-        />
-        
-        {/* Catch-all route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </BrowserRouter>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/features" element={<Features />} />
+      <Route path="/bus-points" element={<BusPoints />} />
+      <Route path="/feedback" element={<Feedback />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+      
+      {/* Admin Routes */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/profile" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/settings" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/drivers" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDrivers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/buses" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminBuses />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/reports" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminReports />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/buses/add" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AddBus />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin" 
+        element={<Navigate to="/admin/dashboard" replace />} 
+      />
+      
+      {/* Driver Routes */}
+      <Route 
+        path="/driver/dashboard" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/profile" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/settings" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver" 
+        element={<Navigate to="/driver/dashboard" replace />} 
+      />
+      
+      {/* Catch-all route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
-const App = () => (
-  <ThemeProvider defaultTheme="light" storageKey="campus-pro-theme">
-    <QueryClientProvider client={queryClient}>
-      {/* Keep AuthProvider for backward compatibility with existing code */}
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <AppContent />
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
-);
+const App = () => {
+  return (
+    <BrowserRouter>
+      <ThemeProvider defaultTheme="light" storageKey="campus-pro-theme">
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AppContent />
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </BrowserRouter>
+  );
+}
 
 export default App;
