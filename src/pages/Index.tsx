@@ -125,7 +125,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold mb-4 text-foreground">System at a Glance</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white [mask-image:radial-gradient(ellipse_at_center,transparent_30%,black)] dark:bg-black">
               Our smart bus tracking system is designed to scale with your campus needs
             </p>
           </div>

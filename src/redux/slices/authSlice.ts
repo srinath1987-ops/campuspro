@@ -103,17 +103,24 @@ export const signUp = createAsyncThunk(
 
 export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue, dispatch }) => {
   try {
-    // Clear local storage first
-    localStorage.removeItem('supabase.auth.token');
-    sessionStorage.clear();
-    
-    // Clear any auth-related items in local storage
+    // Clear local storage immediately
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (key && (key.includes('supabase') || key.includes('auth'))) {
         localStorage.removeItem(key);
       }
     }
+    
+    // Clear session storage as well
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const key = sessionStorage.key(i);
+      if (key && (key.includes('supabase') || key.includes('auth'))) {
+        sessionStorage.removeItem(key);
+      }
+    }
+    
+    // Set a flag that we're logging out
+    sessionStorage.setItem('logging_out', 'true');
     
     // Reset auth state in Redux immediately to prevent loading screens
     dispatch(resetAuthState());
@@ -127,6 +134,9 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
     // Even on error, ensure state is reset
     dispatch(resetAuthState());
     return rejectWithValue(error.message);
+  } finally {
+    // Clear the logging out flag
+    sessionStorage.removeItem('logging_out');
   }
 });
 

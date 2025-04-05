@@ -62,15 +62,15 @@ const Footer = () => {
             <ul className="space-y-2">
               <li className="flex items-center gap-2 text-gray-300 dark:text-gray-300">
                 <Phone size={16} />
-                <span>+1 (555) 123-4567</span>
+                <span>+91 9876543210</span>
               </li>
               <li className="flex items-center gap-2 text-gray-300 dark:text-gray-300">
                 <Mail size={16} />
-                <span>info@campusbusbeacon.com</span>
+                <span>connectin24service@gmail.com</span>
               </li>
               <li className="flex items-start gap-2 text-gray-300 dark:text-gray-300">
                 <MapPin size={16} className="mt-1" />
-                <span>University Campus, Transport Division<br />Innovation Street, Tech City</span>
+                <span>Shiv Nadar University chennai <br />Transport Division</span>
               </li>
             </ul>
           </div>

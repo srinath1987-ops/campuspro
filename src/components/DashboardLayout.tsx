@@ -121,15 +121,19 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
 
   const handleLogout = async () => {
     try {
-      await signOut();
-      // Navigation is handled in signOut
-    } catch (error) {
-      console.error('Error logging out:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to log out. Please try again.',
-        variant: 'destructive',
+      // Set flags and clear state immediately to prevent UI freezing
+      sessionStorage.setItem('logging_out', 'true');
+      localStorage.removeItem('supabase.auth.token');
+      
+      // Navigate immediately without waiting for signOut to complete
+      navigate('/login', { replace: true });
+      
+      // Then perform the actual logout asynchronously
+      signOut().catch((error) => {
+        console.error('Error during logout process:', error);
       });
+    } catch (error) {
+      console.error('Error initiating logout:', error);
       // Try to navigate anyway
       navigate('/login', { replace: true });
     }

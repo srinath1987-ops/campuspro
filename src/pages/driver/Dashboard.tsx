@@ -424,16 +424,26 @@ const Dashboard = () => {
                     </div>
                     <div>
                       <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Status</h3>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
                         {busDetails.in_campus ? (
                           <>
-                            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
-                            <span className="text-green-600 font-bold">Inside Campus</span>
+                            <span className="h-4 w-4 rounded-full bg-green-500 animate-pulse"></span>
+                            <span className="text-green-600 dark:text-green-500 font-bold">Inside Campus</span>
+                            {busDetails.in_time && (
+                              <span className="text-xs text-gray-600 dark:text-gray-300 ml-2">
+                                since {formatTime(busDetails.in_time)}
+                              </span>
+                            )}
                           </>
                         ) : (
                           <>
-                            <span className="h-2 w-2 rounded-full bg-orange-500 animate-pulse"></span>
-                            <span className="text-orange-600 font-bold">Outside Campus</span>
+                            <span className="h-4 w-4 rounded-full bg-orange-500 animate-pulse"></span>
+                            <span className="text-orange-600 dark:text-orange-500 font-bold">Outside Campus</span>
+                            {busDetails.out_time && (
+                              <span className="text-xs text-gray-600 dark:text-gray-300 ml-2">
+                                since {formatTime(busDetails.out_time)}
+                              </span>
+                            )}
                           </>
                         )}
                       </div>

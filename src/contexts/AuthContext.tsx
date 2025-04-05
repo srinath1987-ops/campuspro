@@ -160,17 +160,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
+      // Clear state immediately to prevent UI freezing
+      setSession(null);
+      
       // Set flag to indicate we're logging out (will be checked in ProtectedRoute)
       sessionStorage.setItem('just_logged_out', 'true');
       
-      // Clear session state immediately
-      setSession(null);
-      
-      // Trigger Redux logout which will clear all auth state
-      await dispatch(logout()).unwrap();
-      
-      // Navigate after clearing state to prevent loading screens
+      // Navigate immediately - don't wait for the logout to complete
       navigate('/login', { replace: true });
+      
+      // Then perform the actual logout asynchronously
+      dispatch(logout()).catch((error) => {
+        console.error('Logout error:', error);
+      });
     } catch (error) {
       console.error('Logout error:', error);
       // Force navigation even on errors
