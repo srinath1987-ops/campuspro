@@ -350,7 +350,7 @@ const Dashboard = () => {
                         type="text"
                         value={new Date().toLocaleDateString()}
                         disabled
-                        className="max-w-xs bg-gray-50"
+                        className="max-w-xs bg-gray-900"
                       />
                     </div>
                     

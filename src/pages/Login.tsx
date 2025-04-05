@@ -95,7 +95,7 @@ const Login = () => {
 
   const onSubmit = async (values: LoginValues) => {
     try {
-      console.log("Attempting to sign in:", values.email);
+      // console.log("Attempting to sign in:", values.email);
       // Use the Redux action instead of the context function
       await dispatch(login({ email: values.email, password: values.password })).unwrap();
       // Navigation is handled in the useEffect above when user/profile is updated
@@ -105,46 +105,46 @@ const Login = () => {
     }
   };
 
-  const handleSetupDemo = async () => {
-    setIsSettingUpDemo(true);
-    try {
-      // Check if admin user already exists
-      const adminExists = await checkUserExists('admin03.snuc@gmail.com');
+  // const handleSetupDemo = async () => {
+  //   setIsSettingUpDemo(true);
+  //   try {
+  //     // Check if admin user already exists
+  //     const adminExists = await checkUserExists('admin03.snuc@gmail.com');
       
-      if (adminExists) {
-        toast({
-          title: "Demo Data Already Exists",
-          description: "The demo accounts are already set up. You can use them to log in.",
-        });
-        return;
-      }
+  //     if (adminExists) {
+  //       toast({
+  //         title: "Demo Data Already Exists",
+  //         description: "The demo accounts are already set up. You can use them to log in.",
+  //       });
+  //       return;
+  //     }
       
-      // Setup demo data
-      const result = await setupDemoData();
+  //     // Setup demo data
+  //     const result = await setupDemoData();
       
-      if (result.success) {
-        toast({
-          title: "Demo Setup Successful",
-          description: "Demo accounts have been created. You can now log in with the provided credentials.",
-        });
-      } else {
-        toast({
-          title: "Demo Setup Failed",
-          description: "There was an error setting up the demo accounts. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error('Error setting up demo:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred while setting up demo data.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSettingUpDemo(false);
-    }
-  };
+  //     if (result.success) {
+  //       toast({
+  //         title: "Demo Setup Successful",
+  //         description: "Demo accounts have been created. You can now log in with the provided credentials.",
+  //       });
+  //     } else {
+  //       toast({
+  //         title: "Demo Setup Failed",
+  //         description: "There was an error setting up the demo accounts. Please try again.",
+  //         variant: "destructive",
+  //       });
+  //     }
+  //   } catch (error) {
+  //     console.error('Error setting up demo:', error);
+  //     toast({
+  //       title: "Error",
+  //       description: "An unexpected error occurred while setting up demo data.",
+  //       variant: "destructive",
+  //     });
+  //   } finally {
+  //     setIsSettingUpDemo(false);
+  //   }
+  // };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -230,7 +230,7 @@ const Login = () => {
                   Sign Up
                 </Link>
               </div>
-              <div className="text-sm text-center text-gray-500 mt-2">
+              {/* <div className="text-sm text-center text-gray-500 mt-2">
                 <div className="mb-2">
                   For demo purposes:
                 </div>
@@ -266,7 +266,7 @@ const Login = () => {
                     <div>Password: driver1</div>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </CardFooter>
           </Card>
         </div>
