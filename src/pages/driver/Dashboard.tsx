@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BusFront, Users, Clock, Check, Info } from 'lucide-react';
+import { BusFront, Users, Clock, Check, Info, Edit } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,18 +19,30 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
+// Define types
+type StudentCountRecord = {
+  id: number;
+  bus_number: string;
+  rfid_id: string | null;
+  student_count: number;
+  date: string;
+  time: string;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, profile } = useAuth();
   const [busDetails, setBusDetails] = useState<any | null>(null);
   const [routeDetails, setRouteDetails] = useState<any | null>(null);
-  const [pastCounts, setPastCounts] = useState<any[]>([]);
+  const [pastCounts, setPastCounts] = useState<StudentCountRecord[]>([]);
   const [studentCount, setStudentCount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedToday, setSubmittedToday] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [currentSubmission, setCurrentSubmission] = useState<StudentCountRecord | null>(null);
   
   useEffect(() => {
     // Check if user is logged in and is a driver
@@ -114,6 +125,12 @@ const Dashboard = () => {
       );
       
       setSubmittedToday(!!submittedTodayCount);
+      setCurrentSubmission(submittedTodayCount || null);
+      setIsUpdating(!!submittedTodayCount);
+      
+      if (submittedTodayCount) {
+        setStudentCount(submittedTodayCount.student_count.toString());
+      }
       
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -165,19 +182,101 @@ const Dashboard = () => {
       const todayDate = now.toISOString().split('T')[0];
       const currentTime = now.toISOString();
       
-      const { data, error } = await supabase
-        .from('bus_student_count')
-        .insert([
-          {
+      console.log('Submitting student count:', {
+        bus_number: busDetails.bus_number,
+        date: todayDate,
+        student_count: count
+      });
+      
+      // Try approach 1: Check and delete existing records, then insert
+      try {
+        // Check if we already have a submission for today
+        const { data: existingData, error: checkError } = await supabase
+          .from('bus_student_count')
+          .select('*')
+          .eq('bus_number', busDetails.bus_number)
+          .eq('date', todayDate);
+        
+        if (checkError) {
+          console.error('Error checking for existing records:', checkError);
+          throw checkError;
+        }
+        
+        console.log('Existing data:', existingData);
+        setIsUpdating(existingData && existingData.length > 0);
+        
+        // First delete any existing records for today for this bus to avoid conflicts
+        if (existingData && existingData.length > 0) {
+          console.log('Deleting existing records for today');
+          
+          // Delete one by one to avoid potential issues
+          for (const record of existingData) {
+            const { error: deleteError } = await supabase
+              .from('bus_student_count')
+              .delete()
+              .eq('id', record.id);
+              
+            if (deleteError) {
+              console.error('Error deleting record:', deleteError);
+              throw deleteError;
+            }
+          }
+        }
+        
+        // Wait a moment to ensure deletion is processed
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        console.log('Inserting new record');
+        // Then insert a new record
+        const { data: insertData, error: insertError } = await supabase
+          .from('bus_student_count')
+          .insert({
             bus_number: busDetails.bus_number,
             rfid_id: busDetails.rfid_id,
             student_count: count,
             date: todayDate,
             time: currentTime
-          }
-        ]);
-      
-      if (error) throw error;
+          })
+          .select();
+        
+        if (insertError) {
+          console.error('Error inserting new record:', insertError);
+          throw insertError;
+        }
+        
+        console.log('Insert success:', insertData);
+      } catch (innerError: any) {
+        // If the first approach fails, try approach 2: Insert with specific ID
+        console.log('First approach failed, trying alternate approach', innerError);
+        
+        // Create a deterministic ID based on bus number and date to avoid duplicates
+        const deterministicId = `${busDetails.bus_number}-${todayDate}`.hashCode();
+        
+        console.log('Using deterministic ID:', deterministicId);
+        
+        const { error: upsertError } = await supabase
+          .from('bus_student_count')
+          .upsert(
+            {
+              // Use a known ID if possible (hashed from bus_number + date)
+              id: Math.abs(deterministicId) % 1000000, // Keep it within reasonable range
+              bus_number: busDetails.bus_number,
+              rfid_id: busDetails.rfid_id,
+              student_count: count,
+              date: todayDate,
+              time: currentTime
+            },
+            { 
+              onConflict: 'id',
+              ignoreDuplicates: false
+            }
+          );
+        
+        if (upsertError) {
+          console.error('Even alternate approach failed:', upsertError);
+          throw upsertError;
+        }
+      }
       
       setSubmittedToday(true);
       setShowSuccessDialog(true);
@@ -187,9 +286,16 @@ const Dashboard = () => {
       
     } catch (error: any) {
       console.error('Error submitting count:', error);
+      let errorMessage = error.message || 'Failed to submit student count.';
+      
+      // Handle specific error cases
+      if (errorMessage.includes('bus_student_count_pkey')) {
+        errorMessage = 'A record for today already exists. Please try again.';
+      }
+      
       toast({
         title: 'Submission Failed',
-        description: error.message || 'Failed to submit student count.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -315,16 +421,25 @@ const Dashboard = () => {
             <CardContent>
               {busDetails ? (
                 submittedToday ? (
-                  <Alert className="bg-green-50 border-green-200">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <AlertTitle className="text-green-600">Submission Complete</AlertTitle>
-                    <AlertDescription className="text-green-700">
-                      You have already submitted the student count for today 
-                      ({pastCounts.length > 0 ? pastCounts[0].student_count : 0} students).
-                    </AlertDescription>
-                  </Alert>
+                  <div className="px-6 pb-6">
+                    <Alert className="bg-gray-800 border-white-200 mb-4">
+                      <Check className="h-4 w-4 text-green-600" />
+                      <AlertTitle className="text-green-600">Submission Complete</AlertTitle>
+                      <AlertDescription className="text-green-700">
+                        You have already submitted the student count for today 
+                        ({currentSubmission ? currentSubmission.student_count : 0} students).
+                      </AlertDescription>
+                    </Alert>
+                    {/* <Button 
+                      variant="outline" 
+                      onClick={() => setSubmittedToday(false)}
+                      className="w-full"
+                    >
+                      <Edit className="mr-2 h-4 w-4" /> Edit Today's Submission
+                    </Button> */}
+                  </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="space-y-4">
+                  <form onSubmit={handleSubmit} className="space-y-4 px-6 pb-6">
                     <div>
                       <Label htmlFor="studentCount">Number of Students</Label>
                       <div className="flex items-center gap-3 mt-1">
@@ -350,7 +465,7 @@ const Dashboard = () => {
                         type="text"
                         value={new Date().toLocaleDateString()}
                         disabled
-                        className="max-w-xs bg-gray-900"
+                        className="max-w-xs bg-gray-50 dark:bg-gray-800"
                       />
                     </div>
                     
@@ -369,7 +484,11 @@ const Dashboard = () => {
                         </span>
                       ) : (
                         <span className="flex items-center">
-                          <Check className="mr-2 h-4 w-4" /> Submit Count
+                          {isUpdating ? (
+                            <><Edit className="mr-2 h-4 w-4" /> Update Count</>
+                          ) : (
+                            <><Check className="mr-2 h-4 w-4" /> Submit Count</>
+                          )}
                         </span>
                       )}
                     </Button>
@@ -411,7 +530,7 @@ const Dashboard = () => {
                     </thead>
                     <tbody>
                       {pastCounts.map((entry, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-50">
+                        <tr key={index} className="border-b hover:bg-gray-900">
                           <td className="py-3 px-4">{formatDate(entry.date)}</td>
                           <td className="py-3 px-4">{formatTime(entry.time)}</td>
                           <td className="py-3 px-4">
@@ -453,14 +572,14 @@ const Dashboard = () => {
             <CardContent>
               {routeDetails && routeDetails.stops && routeDetails.stops.length > 0 ? (
                 <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-800"></div>
                   <ul className="space-y-4">
                     {routeDetails.stops.map((stop: any, index: number) => (
                       <li key={index} className="relative pl-8">
                         <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
-                        <div className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                        <div className="bg-gray-800 p-3 rounded-lg border border-gray-200 shadow-sm">
                           <div className="font-bold">{stop.location}</div>
-                          <div className="text-gray-600 text-sm">{stop.time}</div>
+                          <div className="text-white-600 text-sm">{stop.time}</div>
                         </div>
                       </li>
                     ))}
@@ -491,7 +610,9 @@ const Dashboard = () => {
               Submission Successful
             </DialogTitle>
             <DialogDescription>
-              Your student count has been recorded successfully.
+              {isUpdating 
+                ? "Your student count has been updated successfully."
+                : "Your student count has been recorded successfully."}
             </DialogDescription>
           </DialogHeader>
           <div className="bg-green-50 p-4 rounded-lg border border-green-200">
@@ -518,5 +639,23 @@ const Dashboard = () => {
     </DashboardLayout>
   );
 };
+
+// Add string hash code function
+String.prototype.hashCode = function() {
+  let hash = 0;
+  for (let i = 0; i < this.length; i++) {
+    const char = this.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return hash;
+};
+
+// Add the string hash code type declaration
+declare global {
+  interface String {
+    hashCode(): number;
+  }
+}
 
 export default Dashboard;
