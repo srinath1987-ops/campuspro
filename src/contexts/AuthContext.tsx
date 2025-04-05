@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        console.log("Auth state changed:", event, currentSession?.user?.id);
+        // console.log("Auth state changed:", event, currentSession?.user?.id);
         
         // Re-fetch session when auth state changes
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
@@ -148,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      console.log("Attempting login for:", email);
+      // console.log("Attempting login for:", email);
       await dispatch(login({ email, password })).unwrap();
       
       toast({

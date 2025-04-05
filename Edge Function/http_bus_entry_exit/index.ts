@@ -15,7 +15,7 @@ serve(async (req)=>{
   }
   try {
     const { rfid_id, event_type, timestamp } = await req.json();
-    console.log(`Processing ${event_type} event for RFID: ${rfid_id} at ${timestamp}`);
+    // console.log(`Processing ${event_type} event for RFID: ${rfid_id} at ${timestamp}`);
     if (!rfid_id || !event_type || !timestamp) {
       throw new Error('Missing required parameters: rfid_id, event_type, or timestamp');
     }

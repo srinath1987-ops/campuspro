@@ -22,7 +22,7 @@ serve(async (req) => {
   try {
     // Parse request body
     const { rfid_id, event_type } = await req.json()
-    console.log(`Processing ${event_type} event for RFID: ${rfid_id}`)
+    // console.log(`Processing ${event_type} event for RFID: ${rfid_id}`)
     
     if (!rfid_id || !event_type) {
       throw new Error('Missing required parameters: rfid_id or event_type')

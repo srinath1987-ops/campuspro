@@ -14,6 +14,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { User } from '@supabase/supabase-js';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,12 +30,58 @@ type StudentCountRecord = {
   time: string;
 };
 
+type BusStop = {
+  location: string;
+  time: string;
+  description?: string;
+};
+
+type BusRouteDetails = {
+  id?: number;
+  bus_number: string;
+  route_no: string;
+  via: string;
+  stops: BusStop[];
+};
+
+type BusDetails = {
+  id: string;
+  bus_number: string;
+  rfid_id: string;
+  driver_name: string;
+  driver_phone: string;
+  bus_capacity: number;
+  in_campus: boolean;
+  start_point: string;
+  in_time?: string | null;
+  out_time?: string | null;
+  created_at: string;
+};
+
+// Extended Profile type specifically for this component
+type DriverProfile = {
+  id: string;
+  full_name: string;
+  role: 'admin' | 'driver' | 'user';
+  avatar_url?: string;
+  phone_number?: string;
+  bus_number?: string; // Added to fix the linter error
+};
+
+// Define error type for catch blocks
+type SupabaseError = {
+  message: string;
+  details?: string;
+  hint?: string;
+  code?: string;
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { user, profile } = useAuth();
-  const [busDetails, setBusDetails] = useState<any | null>(null);
-  const [routeDetails, setRouteDetails] = useState<any | null>(null);
+  const { user, profile } = useAuth() as { user: User | null; profile: DriverProfile | null };
+  const [busDetails, setBusDetails] = useState<BusDetails | null>(null);
+  const [routeDetails, setRouteDetails] = useState<BusRouteDetails | null>(null);
   const [pastCounts, setPastCounts] = useState<StudentCountRecord[]>([]);
   const [studentCount, setStudentCount] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -182,11 +229,11 @@ const Dashboard = () => {
       const todayDate = now.toISOString().split('T')[0];
       const currentTime = now.toISOString();
       
-      console.log('Submitting student count:', {
-        bus_number: busDetails.bus_number,
-        date: todayDate,
-        student_count: count
-      });
+      // console.log('Submitting student count:', {
+      //   bus_number: busDetails.bus_number,
+      //   date: todayDate,
+      //   student_count: count
+      // });
       
       // Try approach 1: Check and delete existing records, then insert
       try {
@@ -202,12 +249,12 @@ const Dashboard = () => {
           throw checkError;
         }
         
-        console.log('Existing data:', existingData);
+        // console.log('Existing data:', existingData);
         setIsUpdating(existingData && existingData.length > 0);
         
         // First delete any existing records for today for this bus to avoid conflicts
         if (existingData && existingData.length > 0) {
-          console.log('Deleting existing records for today');
+          // console.log('Deleting existing records for today');
           
           // Delete one by one to avoid potential issues
           for (const record of existingData) {
@@ -226,7 +273,7 @@ const Dashboard = () => {
         // Wait a moment to ensure deletion is processed
         await new Promise(resolve => setTimeout(resolve, 500));
         
-        console.log('Inserting new record');
+        // console.log('Inserting new record');
         // Then insert a new record
         const { data: insertData, error: insertError } = await supabase
           .from('bus_student_count')
@@ -244,15 +291,15 @@ const Dashboard = () => {
           throw insertError;
         }
         
-        console.log('Insert success:', insertData);
-      } catch (innerError: any) {
+        // console.log('Insert success:', insertData);
+      } catch (innerError: SupabaseError) {
         // If the first approach fails, try approach 2: Insert with specific ID
-        console.log('First approach failed, trying alternate approach', innerError);
+        // console.log('First approach failed, trying alternate approach', innerError);
         
         // Create a deterministic ID based on bus number and date to avoid duplicates
         const deterministicId = `${busDetails.bus_number}-${todayDate}`.hashCode();
         
-        console.log('Using deterministic ID:', deterministicId);
+        // console.log('Using deterministic ID:', deterministicId);
         
         const { error: upsertError } = await supabase
           .from('bus_student_count')
@@ -284,7 +331,7 @@ const Dashboard = () => {
       // Refresh past counts
       fetchData(busDetails.bus_number);
       
-    } catch (error: any) {
+    } catch (error: SupabaseError) {
       console.error('Error submitting count:', error);
       let errorMessage = error.message || 'Failed to submit student count.';
       
@@ -346,37 +393,37 @@ const Dashboard = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Bus Number</h3>
-                      <p className="text-lg font-bold">{busDetails.bus_number}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Bus Number</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{busDetails.bus_number}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Route Number</h3>
-                      <p className="text-lg font-bold">{routeDetails?.route_no || "N/A"}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Route Number</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{routeDetails?.route_no || "N/A"}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Start Point</h3>
-                      <p className="text-lg font-bold">{busDetails.start_point}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Start Point</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{busDetails.start_point}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Via</h3>
-                      <p className="text-lg font-bold">{routeDetails?.via || "N/A"}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Via</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{routeDetails?.via || "N/A"}</p>
                     </div>
                   </div>
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Driver Name</h3>
-                      <p className="text-lg font-bold">{busDetails.driver_name}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Driver Name</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{busDetails.driver_name}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Contact Number</h3>
-                      <p className="text-lg font-bold">{busDetails.driver_phone}</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Contact Number</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{busDetails.driver_phone}</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Bus Capacity</h3>
-                      <p className="text-lg font-bold">{busDetails.bus_capacity} seats</p>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Bus Capacity</h3>
+                      <p className="text-lg font-bold text-gray-900 dark:text-gray-100">{busDetails.bus_capacity} seats</p>
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-gray-500">Current Status</h3>
+                      <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Current Status</h3>
                       <div className="flex items-center gap-2">
                         {busDetails.in_campus ? (
                           <>
@@ -397,8 +444,8 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <BusFront className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No bus assigned</h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No bus assigned</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       You don't have a bus assigned to your account yet.
                     </p>
                   </div>
@@ -422,10 +469,10 @@ const Dashboard = () => {
               {busDetails ? (
                 submittedToday ? (
                   <div className="px-6 pb-6">
-                    <Alert className="bg-gray-800 border-white-200 mb-4">
+                    <Alert className="bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 mb-4">
                       <Check className="h-4 w-4 text-green-600" />
                       <AlertTitle className="text-green-600">Submission Complete</AlertTitle>
-                      <AlertDescription className="text-green-700">
+                      <AlertDescription className="text-gray-700 dark:text-gray-300">
                         You have already submitted the student count for today 
                         ({currentSubmission ? currentSubmission.student_count : 0} students).
                       </AlertDescription>
@@ -522,21 +569,21 @@ const Dashboard = () => {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b">
-                        <th className="text-left py-3 px-4">Date</th>
-                        <th className="text-left py-3 px-4">Time</th>
-                        <th className="text-left py-3 px-4">Student Count</th>
+                      <tr className="border-b border-gray-200 dark:border-gray-700">
+                        <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Date</th>
+                        <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Time</th>
+                        <th className="text-left py-3 px-4 text-gray-900 dark:text-gray-100">Student Count</th>
                       </tr>
                     </thead>
                     <tbody>
                       {pastCounts.map((entry, index) => (
-                        <tr key={index} className="border-b hover:bg-gray-900">
-                          <td className="py-3 px-4">{formatDate(entry.date)}</td>
-                          <td className="py-3 px-4">{formatTime(entry.time)}</td>
+                        <tr key={index} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-900">
+                          <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{formatDate(entry.date)}</td>
+                          <td className="py-3 px-4 text-gray-800 dark:text-gray-200">{formatTime(entry.time)}</td>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
                               <Users className="h-4 w-4 text-gray-500" />
-                              <span>{entry.student_count} students</span>
+                              <span className="text-gray-800 dark:text-gray-200">{entry.student_count} students</span>
                             </div>
                           </td>
                         </tr>
@@ -548,8 +595,8 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <Clock className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No submissions yet</h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No submissions yet</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       You haven't submitted any student counts yet.
                     </p>
                   </div>
@@ -572,14 +619,14 @@ const Dashboard = () => {
             <CardContent>
               {routeDetails && routeDetails.stops && routeDetails.stops.length > 0 ? (
                 <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-800"></div>
+                  <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-800"></div>
                   <ul className="space-y-4">
-                    {routeDetails.stops.map((stop: any, index: number) => (
+                    {routeDetails.stops.map((stop: BusStop, index: number) => (
                       <li key={index} className="relative pl-8">
                         <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
-                        <div className="bg-gray-800 p-3 rounded-lg border border-gray-200 shadow-sm">
-                          <div className="font-bold">{stop.location}</div>
-                          <div className="text-white-600 text-sm">{stop.time}</div>
+                        <div className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                          <div className="font-bold text-gray-900 dark:text-white">{stop.location}</div>
+                          <div className="text-gray-600 dark:text-gray-300 text-sm">{stop.time}</div>
                         </div>
                       </li>
                     ))}
@@ -589,8 +636,8 @@ const Dashboard = () => {
                 <div className="flex items-center justify-center py-8">
                   <div className="text-center">
                     <Info className="mx-auto h-12 w-12 text-gray-400" />
-                    <h3 className="mt-2 text-sm font-medium text-gray-900">No route information</h3>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No route information</h3>
+                    <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                       Route information is not available for your bus.
                     </p>
                   </div>
@@ -605,29 +652,29 @@ const Dashboard = () => {
       <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-gray-100">
               <Check className="h-5 w-5 text-green-600" />
               Submission Successful
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-gray-600 dark:text-gray-300">
               {isUpdating 
                 ? "Your student count has been updated successfully."
                 : "Your student count has been recorded successfully."}
             </DialogDescription>
           </DialogHeader>
-          <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
             <div className="flex items-center justify-between">
               <div>
-                <p className="font-medium">Date:</p>
-                <p>{new Date().toLocaleDateString()}</p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">Date:</p>
+                <p className="text-gray-700 dark:text-gray-300">{new Date().toLocaleDateString()}</p>
               </div>
               <div>
-                <p className="font-medium">Time:</p>
-                <p>{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">Time:</p>
+                <p className="text-gray-700 dark:text-gray-300">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
               <div>
-                <p className="font-medium">Students:</p>
-                <p>{studentCount}</p>
+                <p className="font-medium text-gray-800 dark:text-gray-200">Students:</p>
+                <p className="text-gray-700 dark:text-gray-300">{studentCount}</p>
               </div>
             </div>
           </div>

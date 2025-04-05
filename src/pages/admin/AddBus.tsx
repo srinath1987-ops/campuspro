@@ -142,7 +142,7 @@ const AddBus = () => {
   const onSubmit = async (values: BusFormValues) => {
     setIsSubmitting(true);
     try {
-      console.log("Submitting bus form:", values);
+      // console.log("Submitting bus form:", values);
       
       // Insert into bus_details table
       const { data: busData, error: busError } = await supabase

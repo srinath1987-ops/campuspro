@@ -97,9 +97,9 @@ const BusPoints = () => {
 
         // Process the data
         const processedRoutes: BusRoute[] = (routesData || []).map(route => {
-          console.log('Processing route:', route);
+          // console.log('Processing route:', route);
           const parsedStops = safeParseStops(route.stops);
-          console.log('Parsed stops:', parsedStops);
+          // console.log('Parsed stops:', parsedStops);
           
           return {
             id: route.id,

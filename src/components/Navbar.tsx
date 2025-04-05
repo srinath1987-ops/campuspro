@@ -62,7 +62,7 @@ const Navbar = () => {
   
   // Debug logs
   useEffect(() => {
-    console.log("Navbar auth state:", { user: !!user, profile: profile?.role, isLoading });
+    // console.log("Navbar auth state:", { user: !!user, profile: profile?.role, isLoading });
   }, [user, profile, isLoading]);
   
   const handleLogout = async () => {
