@@ -405,7 +405,7 @@ const Dashboard = () => {
                     </thead>
                     <tbody>
                       {buses.map((bus) => (
-                        <tr key={bus.rfid_id} className="border-b hover:bg-gray-50">
+                        <tr key={bus.rfid_id} className="border-b hover:bg-gray-300 dark:hover:bg-gray-900 px-2 py-1 rounded">
                           <td className="py-3 px-4">{bus.bus_number}</td>
                           <td className="py-3 px-4">{bus.driver_name}</td>
                           <td className="py-3 px-4">
