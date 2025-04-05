@@ -1,124 +1,126 @@
-# Campus Bus Pro
+# CampusPro Bus Management System
 
-A modern campus bus management system with feedback features and role-based access. The system includes profiles for administrators, drivers, and public-facing components for students.
+CampusPro is a modern, responsive web application designed to streamline bus transportation management for educational institutions. It provides real-time tracking, student counting, and comprehensive reporting for campus transportation services.
+
+![CampusPro Logo](https://iili.io/37Iga6u.png)
 
 ## Features
 
-- 🚌 Real-time bus tracking and management
-- 👤 Role-based access (Admin, Driver, Public)
-- 🎨 Modern UI with light and dark mode
-- 📱 Fully responsive design
-- 📝 Student feedback system
-- 📊 Admin analytics dashboard
-- 🔒 Secure authentication with Supabase
+### For Administrators
 
-## Database Setup
+- **Dashboard Overview**: Get a bird's-eye view of all buses with real-time status, location, and student count.
+- **Driver Management**: Add, edit, and manage driver profiles and assignments.
+- **Bus Management**: Track and manage your fleet with detailed information.
+- **Reports**: Generate comprehensive reports on bus usage, student counts, and route efficiency.
+- **Feedback Management**: View and respond to feedback submitted by users.
 
-### Option 1: Using the included script
+### For Drivers
 
-To set up the required database tables:
+- **Real-time Updates**: Update bus status (in/out of campus) and student counts.
+- **Route Information**: Access detailed route information including stops and schedules.
+- **Profile Management**: Update personal information and contact details.
 
-1. Run the SQL script in the Supabase SQL Editor:
-   - Open your Supabase dashboard
-   - Navigate to SQL Editor
-   - Copy and paste the contents of `scripts/create_missing_tables.sql`
-   - Click Execute
+### For Students/Users
 
-This will create:
-- Feedback table with proper RLS policies
-- Storage bucket for profile images with appropriate security policies
+- **Bus Tracking**: View real-time bus locations and expected arrival times.
+- **Bus Schedule**: Access comprehensive bus schedules and route information.
+- **Feedback Submission**: Submit feedback or report issues with the transportation service.
 
-### Option 2: Using Supabase CLI
+## Technology Stack
 
-If you have the Supabase CLI configured:
+- **Frontend**: React.js with TypeScript
+- **UI Framework**: Custom components with Tailwind CSS
+- **State Management**: Redux Toolkit
+- **Backend**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Hosting**: Vercel/Netlify/Your preferred hosting
 
-```bash
-npm run apply-schema
-```
+## Installation
 
-## Getting Started
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/yourusername/campuspro.git
+   cd campuspro
+   ```
 
-1. Clone the repository
 2. Install dependencies:
    ```bash
    npm install
    ```
-3. Set up your environment variables in `.env`:
+
+3. Set up environment variables:
+   Create a `.env.local` file in the root directory with the following variables:
    ```
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
+
 4. Run the development server:
    ```bash
    npm run dev
    ```
 
-## Technology Stack
+5. Build for production:
+   ```bash
+   npm run build
+   ```
 
-- React with TypeScript
-- Tailwind CSS for styling
-- Redux for state management
-- Supabase for backend services
-- Vite as the build tool
+## Project Structure
 
-## Project info
-
-**URL**: https://lovable.dev/projects/08c72bd9-97de-493d-b90b-431cc8feb8c2
-
-## How can I edit this code?
-
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/08c72bd9-97de-493d-b90b-431cc8feb8c2) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```
+campuspro/
+├── public/             # Static assets
+├── src/
+│   ├── components/     # Reusable UI components
+│   ├── contexts/       # React contexts
+│   ├── hooks/          # Custom React hooks
+│   ├── integrations/   # Third-party service integrations
+│   ├── lib/            # Utility functions and helpers
+│   ├── pages/          # Page components
+│   │   ├── admin/      # Admin dashboard pages
+│   │   ├── driver/     # Driver dashboard pages
+│   │   └── public/     # Public-facing pages
+│   ├── redux/          # Redux state management
+│   └── styles/         # Global styles
+└── scripts/            # Utility scripts for database setup
 ```
 
-**Edit a file directly in GitHub**
+## Database Schema
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+The application uses the following primary tables:
 
-**Use GitHub Codespaces**
+- `profiles`: User profiles with roles (admin, driver, user)
+- `bus_details`: Information about each bus in the fleet
+- `bus_routes`: Route information for each bus
+- `bus_student_count`: Daily student count records
+- `feedback`: User-submitted feedback
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Authentication and Authorization
 
-## How can I deploy this project?
+CampusPro uses role-based access control:
 
-Simply open [Lovable](https://lovable.dev/projects/08c72bd9-97de-493d-b90b-431cc8feb8c2) and click on Share -> Publish.
+- **Administrators**: Full access to all features
+- **Drivers**: Access to driver dashboard and related features
+- **Users**: Access to public features and feedback submission
 
-## Can I connect a custom domain to my Lovable project?
+## Theming
 
-Yes it is!
+The application supports both light and dark modes with a consistent design language across all interfaces.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## Contributing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/your-feature`
+3. Commit your changes: `git commit -m 'Add some feature'`
+4. Push to the branch: `git push origin feature/your-feature`
+5. Submit a pull request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- Icons provided by [Lucide Icons](https://lucide.dev/)
+- UI components inspired by [shadcn/ui](https://ui.shadcn.com/)
+- Charts powered by [Recharts](https://recharts.org/)
