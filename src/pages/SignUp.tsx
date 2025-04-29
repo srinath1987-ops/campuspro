@@ -110,11 +110,13 @@ const SignUp = () => {
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
-      // Fixed: Pass the username as fullName parameter to ensure it's stored properly
+      console.log("Submitting signup with values:", values);
+      
+      // Pass the username value consistently as the fullName parameter
       await signUp(
         values.email, 
         values.password, 
-        values.username, // This is the key fix - ensuring username is passed correctly
+        values.username, // Pass username as the fullName parameter
         values.role
       );
       
@@ -130,7 +132,6 @@ const SignUp = () => {
       navigate('/login');
     } catch (error: any) {
       console.error('Signup error:', error);
-      // Enhanced error handling with more specific message
       const errorMessage = error?.message || 'Failed to sign up. Please try again.';
       toast({
         title: "Sign Up Error",

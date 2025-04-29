@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -197,7 +198,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Ensure role is valid
       const validRole = (role === 'admin' || role === 'driver') ? role : 'driver';
       
-      await dispatch(reduxSignUp({ email, password, fullName, role: validRole })).unwrap();
+      // Call the Redux signUp action with the fullName parameter
+      await dispatch(reduxSignUp({ 
+        email, 
+        password, 
+        fullName, // This is important - we need to pass the fullName correctly
+        role: validRole 
+      })).unwrap();
     } catch (error: any) {
       toast({
         title: 'Sign Up Error',

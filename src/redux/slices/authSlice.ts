@@ -1,4 +1,3 @@
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/contexts/AuthContext';
@@ -85,9 +84,21 @@ export const signUp = createAsyncThunk(
       if (!password || password.length < 6) return rejectWithValue('Password must be at least 6 characters');
       if (!fullName || !fullName.trim()) return rejectWithValue('Full name is required');
       
+      // Make sure we have a valid value for username
+      const username = fullName.trim();
+      if (!username) return rejectWithValue('Username cannot be empty');
+      
+      // Create auth user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          data: {
+            username: username, // Explicitly set username in auth metadata
+            full_name: fullName,
+            role: role
+          }
+        }
       });
 
       if (error) throw error;
@@ -102,12 +113,12 @@ export const signUp = createAsyncThunk(
         email,
         phone_number: '',
         role: safeRole,
-        username: fullName, // Make sure username is explicitly set to fullName value
+        username: username, // Make sure username is explicitly set
       });
 
       if (profileError) {
         // Clean up auth user if profile creation fails
-        await supabase.auth.admin.deleteUser(data.user.id);
+        console.error("Profile creation error:", profileError);
         throw new Error(`Profile creation failed: ${profileError.message}`);
       }
 
@@ -129,6 +140,7 @@ export const signUp = createAsyncThunk(
 
       return { user: data.user, profile: typeSafeProfile };
     } catch (error: any) {
+      console.error("Signup error:", error);
       return rejectWithValue(handleAuthError(error));
     }
   }
