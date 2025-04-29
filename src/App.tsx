@@ -10,10 +10,6 @@ import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import { fetchSession } from "./redux/slices/authSlice";
 import { ThemeProvider } from "./components/theme-provider";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ChatAssistant from "./components/ChatAssistant";
-import './App.css';
-
-// Pages
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Features from "./pages/Features";
@@ -156,113 +152,111 @@ const AppContent = () => {
   }
 
   return (
-    <>
-      <Routes>
-        {/* Public Routes */}
-        <Route path="/" element={<Index />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/bus-points" element={<BusPoints />} />
-        <Route path="/feedback" element={<Feedback />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<SignUp />} />
-        
-        {/* Admin Routes */}
-        <Route 
-          path="/admin/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/profile" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminProfile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/settings" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminSettings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/drivers" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminDrivers />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/buses" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminBuses />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/reports" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminReports />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin/buses/add" 
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AddBus />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/admin" 
-          element={<Navigate to="/admin/dashboard" replace />} 
-        />
-        
-        {/* Driver Routes */}
-        <Route 
-          path="/driver/dashboard" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverDashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver/profile" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverProfile />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver/settings" 
-          element={
-            <ProtectedRoute allowedRole="driver">
-              <DriverSettings />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/driver" 
-          element={<Navigate to="/driver/dashboard" replace />} 
-        />
-        
-        {/* Catch-all route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </>
+    <Routes>
+      {/* Public Routes */}
+      <Route path="/" element={<Index />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/features" element={<Features />} />
+      <Route path="/bus-points" element={<BusPoints />} />
+      <Route path="/feedback" element={<Feedback />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/signup" element={<SignUp />} />
+      
+      {/* Admin Routes */}
+      <Route 
+        path="/admin/dashboard" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/profile" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/settings" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/drivers" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminDrivers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/buses" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminBuses />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/reports" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AdminReports />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin/buses/add" 
+        element={
+          <ProtectedRoute allowedRole="admin">
+            <AddBus />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/admin" 
+        element={<Navigate to="/admin/dashboard" replace />} 
+      />
+      
+      {/* Driver Routes */}
+      <Route 
+        path="/driver/dashboard" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/profile" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverProfile />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver/settings" 
+        element={
+          <ProtectedRoute allowedRole="driver">
+            <DriverSettings />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/driver" 
+        element={<Navigate to="/driver/dashboard" replace />} 
+      />
+      
+      {/* Catch-all route */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
