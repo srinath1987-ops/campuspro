@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -7,21 +8,24 @@ export interface Bus {
   bus_number: string;
   rfid_id: string;
   driver_name: string;
+  driver_phone: string;
   bus_capacity: number;
   in_campus: boolean;
   in_time?: string | null;
   out_time?: string | null;
-  created_at: string;
-  student_count?: number;
+  start_point: string;
+  last_updated: string;
+  created_at?: string; // Optional since it might not be returned by Supabase
+  student_count?: number; // Optional since it's added dynamically
 }
 
 export interface BusEntry {
-  id: string;
+  id: number;
   bus_number: string;
-  rfid_id: string;
-  in_time: string;
+  rfid_id: string | null;
+  in_time: string | null;
   out_time?: string | null;
-  date_in: string;
+  date_in: string | null;
   date_out?: string | null;
   created_at: string;
 }
@@ -29,6 +33,12 @@ export interface BusEntry {
 export interface DailyStudentCount {
   date: string;
   student_count: number;
+}
+
+export interface BusStop {
+  location: string;
+  time: string;
+  description?: string;
 }
 
 interface BusState {
@@ -67,16 +77,25 @@ export const fetchBuses = createAsyncThunk('buses/fetchBuses', async (_, { rejec
         
       if (countError) {
         console.error('Error fetching count:', countError);
-        return { ...bus, student_count: 0 };
+        return { 
+          ...bus, 
+          // Adding missing properties required by the Bus interface
+          id: bus.rfid_id, // Use RFID as ID for existing buses
+          created_at: new Date().toISOString(), // Default for existing records
+          student_count: 0 
+        };
       }
       
       return { 
-        ...bus, 
+        ...bus,
+        // Adding missing properties required by the Bus interface
+        id: bus.rfid_id, // Use RFID as ID for existing buses
+        created_at: new Date().toISOString(), // Default for existing records
         student_count: countData && countData.length > 0 ? countData[0].student_count : 0 
       };
     }));
 
-    return busesWithCount;
+    return busesWithCount as Bus[];
   } catch (error: any) {
     return rejectWithValue(error.message);
   }
@@ -95,7 +114,7 @@ export const fetchBusEntries = createAsyncThunk(
 
       if (error) throw error;
 
-      return data;
+      return data as BusEntry[];
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -119,7 +138,7 @@ export const fetchStudentCounts = createAsyncThunk(
 
       if (error) throw error;
 
-      return data;
+      return data as DailyStudentCount[];
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -128,13 +147,33 @@ export const fetchStudentCounts = createAsyncThunk(
 
 export const addBus = createAsyncThunk(
   'buses/addBus',
-  async (busData: Omit<Bus, 'id' | 'created_at'>, { rejectWithValue }) => {
+  async (busData: Omit<Bus, 'id' | 'created_at' | 'last_updated'>, { rejectWithValue }) => {
     try {
-      const { data, error } = await supabase.from('bus_details').insert([busData]).select().single();
+      // Make sure the object we're sending matches what Supabase expects
+      const supabaseData = {
+        bus_number: busData.bus_number,
+        rfid_id: busData.rfid_id,
+        driver_name: busData.driver_name,
+        driver_phone: busData.driver_phone,
+        bus_capacity: busData.bus_capacity,
+        start_point: busData.start_point,
+        in_campus: busData.in_campus || false,
+      };
+
+      const { data, error } = await supabase
+        .from('bus_details')
+        .insert([supabaseData])
+        .select()
+        .single();
 
       if (error) throw error;
 
-      return data;
+      // Add the missing properties required by our interface
+      return {
+        ...data,
+        id: data.rfid_id, // Use RFID as ID for now
+        created_at: new Date().toISOString(),
+      } as Bus;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -148,13 +187,18 @@ export const updateBus = createAsyncThunk(
       const { data, error } = await supabase
         .from('bus_details')
         .update(busData)
-        .eq('id', id)
+        .eq('rfid_id', id) // Using rfid_id as the unique identifier
         .select()
         .single();
 
       if (error) throw error;
 
-      return data;
+      // Add the missing properties required by our interface
+      return {
+        ...data,
+        id: data.rfid_id, // Use RFID as ID for consistency
+        created_at: data.created_at || new Date().toISOString(),
+      } as Bus;
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -165,7 +209,10 @@ export const deleteBus = createAsyncThunk(
   'buses/deleteBus',
   async (id: string, { rejectWithValue }) => {
     try {
-      const { error } = await supabase.from('bus_details').delete().eq('id', id);
+      const { error } = await supabase
+        .from('bus_details')
+        .delete()
+        .eq('rfid_id', id); // Using rfid_id as the unique identifier
 
       if (error) throw error;
 
@@ -285,4 +332,4 @@ const busSlice = createSlice({
 });
 
 export const { setSelectedBus, clearBusError } = busSlice.actions;
-export default busSlice.reducer; 
+export default busSlice.reducer;

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BusFront, Users, Clock, Check, Info, Edit } from 'lucide-react';
@@ -45,7 +46,7 @@ type BusRouteDetails = {
 };
 
 type BusDetails = {
-  id: string;
+  id: string; // Using rfid_id as id
   bus_number: string;
   rfid_id: string;
   driver_name: string;
@@ -55,7 +56,8 @@ type BusDetails = {
   start_point: string;
   in_time?: string | null;
   out_time?: string | null;
-  created_at: string;
+  last_updated: string;
+  created_at: string; // Added for compatibility
 };
 
 // Extended Profile type specifically for this component
@@ -120,8 +122,8 @@ const Dashboard = () => {
       // Create BusDetails with all required fields
       const typedBusDetails: BusDetails = {
         ...busData,
-        id: busData.id || busData.bus_number, // Use bus_number as fallback ID if not present
-        created_at: busData.created_at || new Date().toISOString()
+        id: busData.rfid_id, // Use rfid_id as the unique identifier
+        created_at: new Date().toISOString(), // Set a default value for created_at
       };
       
       setBusDetails(typedBusDetails);
@@ -145,7 +147,12 @@ const Dashboard = () => {
             processedStops = [];
           }
         } else if (Array.isArray(routeData.stops)) {
-          processedStops = routeData.stops;
+          // Ensure each item in the array matches the BusStop type
+          processedStops = routeData.stops.map((stop: any) => ({
+            location: stop.location || 'Unknown',
+            time: stop.time || '00:00',
+            description: stop.description
+          }));
         }
         
         setRouteDetails({
@@ -181,8 +188,9 @@ const Dashboard = () => {
         setStudentCount(submittedTodayCount.student_count.toString());
       }
       
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error fetching data:', errorMessage);
       toast({
         title: 'Error',
         description: 'Failed to fetch bus data.',
@@ -288,9 +296,11 @@ const Dashboard = () => {
         }
         
         // console.log('Insert success:', insertData);
-      } catch (innerError: any) {
+      } catch (error: unknown) {
         // If the first approach fails, try approach 2: Insert with specific ID
-        // console.log('First approach failed, trying alternate approach', innerError);
+        // console.log('First approach failed, trying alternate approach', error);
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('First approach failed, trying alternate approach:', errorMessage);
         
         // Create a deterministic ID based on bus number and date to avoid duplicates
         const deterministicId = `${busDetails.bus_number}-${todayDate}`.hashCode();
@@ -327,20 +337,24 @@ const Dashboard = () => {
       // Refresh past counts
       fetchData(busDetails.bus_number);
       
-    } catch (error: any) {
-      console.error('Error submitting count:', error);
-      let errorMessage = error.message || 'Failed to submit student count.';
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Error submitting count:', errorMessage);
       
       // Handle specific error cases
-      if (errorMessage.includes('bus_student_count_pkey')) {
-        errorMessage = 'A record for today already exists. Please try again.';
+      if (typeof errorMessage === 'string' && errorMessage.includes('bus_student_count_pkey')) {
+        toast({
+          title: 'Submission Failed',
+          description: 'A record for today already exists. Please try again.',
+          variant: 'destructive'
+        });
+      } else {
+        toast({
+          title: 'Submission Failed',
+          description: 'Failed to submit student count.',
+          variant: 'destructive'
+        });
       }
-      
-      toast({
-        title: 'Submission Failed',
-        description: errorMessage,
-        variant: 'destructive'
-      });
     } finally {
       setIsSubmitting(false);
     }

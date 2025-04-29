@@ -63,13 +63,15 @@ export const signUp = createAsyncThunk(
 
       if (data.user) {
         // Create a profile for the new user with ID matching auth user ID
+        // Convert role string to the Supabase enum type
+        const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
+        
         const { error: profileError } = await supabase.from('profiles').insert({
           id: data.user.id,
-          full_name: fullName,
-          role,
           email,
+          phone_number: '',
+          role: safeRole,
           username: fullName.toLowerCase().replace(/\s+/g, '_'),
-          phone_number: ''
         });
 
         if (profileError) throw profileError;
@@ -176,7 +178,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(login.fulfilled, (state, action) => {
+    builder.addCase(login.fulfilled, (state, action: PayloadAction<{user: User, profile: Profile}>) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -191,7 +193,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(signUp.fulfilled, (state, action) => {
+    builder.addCase(signUp.fulfilled, (state, action: PayloadAction<{user: User, profile: Profile}>) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -220,7 +222,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(fetchSession.fulfilled, (state, action) => {
+    builder.addCase(fetchSession.fulfilled, (state, action: PayloadAction<{user: User | null, profile: Profile | null}>) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -233,4 +235,4 @@ const authSlice = createSlice({
 });
 
 export const { clearError, resetAuthState } = authSlice.actions;
-export default authSlice.reducer; 
+export default authSlice.reducer;
