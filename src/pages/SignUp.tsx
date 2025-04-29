@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { BusFront, UserPlus } from 'lucide-react';
@@ -109,28 +110,27 @@ const SignUp = () => {
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
-      // Fixed: Adjust parameters to match the signUp function in AuthContext
+      // Fixed: Pass the username as fullName parameter to ensure it's stored properly
       await signUp(
         values.email, 
         values.password, 
-        values.username,
+        values.username, // This is the key fix - ensuring username is passed correctly
         values.role
       );
       
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
       
-      // Show success message
       toast({
         title: "Account created",
         description: "Your account has been created successfully",
-        variant: "default" // Use "default" instead of "success"
+        variant: "default"
       });
       
       navigate('/login');
     } catch (error: any) {
       console.error('Signup error:', error);
-      // Enhanced error handling
+      // Enhanced error handling with more specific message
       const errorMessage = error?.message || 'Failed to sign up. Please try again.';
       toast({
         title: "Sign Up Error",

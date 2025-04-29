@@ -102,7 +102,7 @@ export const signUp = createAsyncThunk(
         email,
         phone_number: '',
         role: safeRole,
-        username: fullName.toLowerCase().replace(/\s+/g, '_'),
+        username: fullName, // Make sure username is explicitly set to fullName value
       });
 
       if (profileError) {
