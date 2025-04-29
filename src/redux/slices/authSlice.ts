@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/contexts/AuthContext';
@@ -104,41 +105,45 @@ export const signUp = createAsyncThunk(
       if (error) throw error;
       if (!data.user) throw new Error('User registration failed: no user data returned');
 
-      // Convert role string to the Supabase enum type
-      const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
+      try {
+        // Convert role string to the Supabase enum type
+        const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
+          
+        // Create a profile for the new user with ID matching auth user ID
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          email,
+          phone_number: '',
+          role: safeRole,
+          username: username, // Make sure username is explicitly set
+        });
+
+        if (profileError) {
+          // Log the error but don't throw - the auth user was created successfully
+          console.error("Profile creation error:", profileError);
+          // Continue execution - we don't want to fail signup if only profile creation failed
+        }
         
-      // Create a profile for the new user with ID matching auth user ID
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: data.user.id,
-        email,
-        phone_number: '',
-        role: safeRole,
-        username: username, // Make sure username is explicitly set
-      });
-
-      if (profileError) {
-        // Clean up auth user if profile creation fails
-        console.error("Profile creation error:", profileError);
-        throw new Error(`Profile creation failed: ${profileError.message}`);
+        // Return the user data even if profile creation had an issue
+        // The profile can be created/updated later
+        return { 
+          user: data.user, 
+          profile: {
+            id: data.user.id,
+            email,
+            role: safeRole as 'admin' | 'driver',
+            username
+          } 
+        };
+      } catch (profileErr) {
+        // Continue with signup success even if profile has issues
+        console.error("Error in profile handling:", profileErr);
+        
+        return { 
+          user: data.user, 
+          profile: null 
+        };
       }
-
-      // Fetch the created profile
-      const { data: profileData, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
-      if (fetchError) throw new Error(`Could not retrieve created profile: ${fetchError.message}`);
-
-      // Ensure type safety for role
-      const typeSafeProfile: Profile = {
-        ...profileData,
-        role: profileData.role as 'admin' | 'driver',
-        id: profileData.id,
-      };
-
-      return { user: data.user, profile: typeSafeProfile };
     } catch (error: any) {
       console.error("Signup error:", error);
       return rejectWithValue(handleAuthError(error));

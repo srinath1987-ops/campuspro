@@ -199,12 +199,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const validRole = (role === 'admin' || role === 'driver') ? role : 'driver';
       
       // Call the Redux signUp action with the fullName parameter
-      await dispatch(reduxSignUp({ 
+      const result = await dispatch(reduxSignUp({ 
         email, 
         password, 
-        fullName, // This is important - we need to pass the fullName correctly
+        fullName, 
         role: validRole 
       })).unwrap();
+
+      // If we got here, the user was created in the auth system
+      // Show success message even if there was a profile creation issue
+      toast({
+        title: 'Account created',
+        description: result.profile 
+          ? 'Your account has been created successfully' 
+          : 'Account created, but your profile may need to be completed later',
+      });
+      
+      // Navigate to login page
+      navigate('/login');
     } catch (error: any) {
       toast({
         title: 'Sign Up Error',
