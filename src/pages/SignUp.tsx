@@ -46,7 +46,7 @@ const signUpSchema = z.object({
   phone: z.string().min(10, {
     message: "Please enter a valid phone number.",
   }),
-  role: z.enum(['admin', 'driver']).default('driver'),
+  role: z.literal('driver'),
   bus_number: z.string().optional(),
 });
 
@@ -163,44 +163,17 @@ const SignUp = () => {
                   />
                   <FormField
                     control={form.control}
-                    name="role"
+                    name="bus_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Role</FormLabel>
-                        <Select 
-                          onValueChange={field.onChange} 
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select your role" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="admin">Admin</SelectItem>
-                            <SelectItem value="driver">Driver</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <FormLabel>Bus Number</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter assigned bus number" {...field} />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  
-                  {watchRole === "driver" && (
-                    <FormField
-                      control={form.control}
-                      name="bus_number"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Bus Number</FormLabel>
-                          <FormControl>
-                            <Input placeholder="Enter assigned bus number" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  )}
                   
                   <Button 
                     type="submit" 
