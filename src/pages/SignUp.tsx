@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { BusFront, UserPlus } from 'lucide-react';
@@ -79,9 +78,7 @@ const SignUp = () => {
         values.email, 
         values.password, 
         values.username, 
-        values.phone, 
-        values.role,
-        values.bus_number
+        values.role
       );
       navigate('/login');
     } catch (error) {

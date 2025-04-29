@@ -17,7 +17,7 @@ import {
 import { User } from '@supabase/supabase-js';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, Profile } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 // Define types
@@ -59,21 +59,8 @@ type BusDetails = {
 };
 
 // Extended Profile type specifically for this component
-type DriverProfile = {
-  id: string;
-  full_name: string;
-  role: 'admin' | 'driver' | 'user';
-  avatar_url?: string;
-  phone_number?: string;
-  bus_number?: string; // Added to fix the linter error
-};
-
-// Define error type for catch blocks
-type SupabaseError = {
-  message: string;
-  details?: string;
-  hint?: string;
-  code?: string;
+type DriverProfile = Profile & {
+  bus_number?: string;
 };
 
 const Dashboard = () => {
@@ -130,7 +117,14 @@ const Dashboard = () => {
       
       if (busError) throw busError;
       
-      setBusDetails(busData);
+      // Create BusDetails with all required fields
+      const typedBusDetails: BusDetails = {
+        ...busData,
+        id: busData.id || busData.bus_number, // Use bus_number as fallback ID if not present
+        created_at: busData.created_at || new Date().toISOString()
+      };
+      
+      setBusDetails(typedBusDetails);
       
       // Fetch route details
       const { data: routeData, error: routeError } = await supabase
@@ -141,15 +135,23 @@ const Dashboard = () => {
       
       if (!routeError && routeData) {
         // Parse stops if they're stored as JSON string
+        let processedStops: BusStop[] = [];
+        
         if (typeof routeData.stops === 'string') {
           try {
-            routeData.stops = JSON.parse(routeData.stops);
+            processedStops = JSON.parse(routeData.stops);
           } catch (e) {
             console.error("Error parsing stops JSON:", e);
-            routeData.stops = [];
+            processedStops = [];
           }
+        } else if (Array.isArray(routeData.stops)) {
+          processedStops = routeData.stops;
         }
-        setRouteDetails(routeData);
+        
+        setRouteDetails({
+          ...routeData,
+          stops: processedStops
+        });
       }
       
       // Fetch past student counts
@@ -229,12 +231,6 @@ const Dashboard = () => {
       const todayDate = now.toISOString().split('T')[0];
       const currentTime = now.toISOString();
       
-      // console.log('Submitting student count:', {
-      //   bus_number: busDetails.bus_number,
-      //   date: todayDate,
-      //   student_count: count
-      // });
-      
       // Try approach 1: Check and delete existing records, then insert
       try {
         // Check if we already have a submission for today
@@ -292,7 +288,7 @@ const Dashboard = () => {
         }
         
         // console.log('Insert success:', insertData);
-      } catch (innerError: SupabaseError) {
+      } catch (innerError: any) {
         // If the first approach fails, try approach 2: Insert with specific ID
         // console.log('First approach failed, trying alternate approach', innerError);
         
@@ -331,7 +327,7 @@ const Dashboard = () => {
       // Refresh past counts
       fetchData(busDetails.bus_number);
       
-    } catch (error: SupabaseError) {
+    } catch (error: any) {
       console.error('Error submitting count:', error);
       let errorMessage = error.message || 'Failed to submit student count.';
       

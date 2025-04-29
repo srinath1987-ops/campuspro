@@ -95,7 +95,14 @@ const Reports = () => {
 
       if (error) throw error;
       
-      setFeedback(data || []);
+      // Transform the raw data to match our Feedback interface
+      const typedFeedback: Feedback[] = (data || []).map(item => ({
+        ...item,
+        feedback_type: item.feedback_type as FeedbackType,
+        status: item.status as FeedbackStatus
+      }));
+      
+      setFeedback(typedFeedback);
     } catch (error: any) {
       console.error('Error fetching feedback:', error);
       toast({
@@ -164,85 +171,40 @@ const Reports = () => {
           : item
       ));
       
+      setFeedbackDialogOpen(false);
       toast({
         title: 'Success',
-        description: 'Feedback has been updated',
+        description: 'Feedback status updated successfully',
       });
-      
-      setFeedbackDialogOpen(false);
     } catch (error: any) {
       console.error('Error updating feedback:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update feedback',
+        description: error.message || 'Failed to update feedback status',
         variant: 'destructive',
       });
     }
   };
 
-  const getStatusBadge = (status: FeedbackStatus) => {
-    switch (status) {
-      case FeedbackStatus.Pending:
-        return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-200 border-yellow-200 dark:border-yellow-800/30">
-          <Clock className="mr-1 h-3 w-3" /> Pending
-        </Badge>;
-      case FeedbackStatus.InProgress:
-        return <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-200 border-blue-200 dark:border-blue-800/30">
-          <AlertCircle className="mr-1 h-3 w-3" /> In Progress
-        </Badge>;
-      case FeedbackStatus.Resolved:
-        return <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800/30">
-          <CheckCircle className="mr-1 h-3 w-3" /> Resolved
-        </Badge>;
-      case FeedbackStatus.Closed:
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800/30 dark:text-gray-200 border-gray-200 dark:border-gray-700">
-          Closed
-        </Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
-    }
-  };
-
-  const getTypeBadge = (type: FeedbackType) => {
-    switch (type) {
-      case FeedbackType.Complaint:
-        return <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-200 border-red-200 dark:border-red-800/30">
-          <AlertTriangle className="mr-1 h-3 w-3" /> Complaint
-        </Badge>;
-      case FeedbackType.Suggestion:
-        return <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-200 border-purple-200 dark:border-purple-800/30">
-          <MessageSquare className="mr-1 h-3 w-3" /> Suggestion
-        </Badge>;
-      case FeedbackType.Appreciation:
-        return <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-200 border-green-200 dark:border-green-800/30">
-          <ThumbsUp className="mr-1 h-3 w-3" /> Appreciation
-        </Badge>;
-      default:
-        return <Badge variant="outline">{type}</Badge>;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
-  };
-
   return (
-    <DashboardLayout title="Reports & Feedback" role="admin" currentPath="/admin/reports">
-      <div className="container mx-auto py-6">
+    <DashboardLayout title="Feedback Reports" role="admin" currentPath="/admin/reports">
+      <div className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>User Feedback</CardTitle>
+            <CardTitle className="text-xl flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Feedback Management
+            </CardTitle>
             <CardDescription>
-              Manage and respond to feedback submitted by users.
+              View and manage user feedback, complaints, and suggestions
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {/* Filters and search */}
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="flex-1 relative">
-                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              {/* Search and filter */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="relative flex-grow">
+                  <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500 dark:text-gray-400" />
                   <Input
                     placeholder="Search feedback..."
                     className="pl-8"
@@ -250,102 +212,114 @@ const Reports = () => {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  <Select
-                    value={typeFilter}
-                    onValueChange={(value) => setTypeFilter(value as FeedbackType | 'all')}
-                  >
-                    <SelectTrigger className="w-40">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value={FeedbackType.Complaint}>Complaints</SelectItem>
-                      <SelectItem value={FeedbackType.Suggestion}>Suggestions</SelectItem>
-                      <SelectItem value={FeedbackType.Appreciation}>Appreciations</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Select
-                    value={statusFilter}
-                    onValueChange={(value) => setStatusFilter(value as FeedbackStatus | 'all')}
-                  >
-                    <SelectTrigger className="w-40">
-                      <Filter className="mr-2 h-4 w-4" />
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Statuses</SelectItem>
-                      <SelectItem value={FeedbackStatus.Pending}>Pending</SelectItem>
-                      <SelectItem value={FeedbackStatus.InProgress}>In Progress</SelectItem>
-                      <SelectItem value={FeedbackStatus.Resolved}>Resolved</SelectItem>
-                      <SelectItem value={FeedbackStatus.Closed}>Closed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  
-                  <Button 
-                    variant="outline" 
-                    onClick={() => {
-                      setSearchQuery('');
-                      setTypeFilter('all');
-                      setStatusFilter('all');
-                    }}
-                  >
-                    Reset Filters
-                  </Button>
+                <div className="flex gap-2">
+                  <div className="w-40">
+                    <Select
+                      value={typeFilter}
+                      onValueChange={(value) => setTypeFilter(value as FeedbackType | 'all')}
+                    >
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4" />
+                          <span>Type</span>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value={FeedbackType.Complaint}>Complaints</SelectItem>
+                        <SelectItem value={FeedbackType.Suggestion}>Suggestions</SelectItem>
+                        <SelectItem value={FeedbackType.Appreciation}>Appreciation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-40">
+                    <Select
+                      value={statusFilter}
+                      onValueChange={(value) => setStatusFilter(value as FeedbackStatus | 'all')}
+                    >
+                      <SelectTrigger>
+                        <div className="flex items-center gap-2">
+                          <Filter className="h-4 w-4" />
+                          <span>Status</span>
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value={FeedbackStatus.Pending}>Pending</SelectItem>
+                        <SelectItem value={FeedbackStatus.InProgress}>In Progress</SelectItem>
+                        <SelectItem value={FeedbackStatus.Resolved}>Resolved</SelectItem>
+                        <SelectItem value={FeedbackStatus.Closed}>Closed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               </div>
 
-              {/* Table of feedback */}
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-32">Type</TableHead>
-                      <TableHead>Name / Email</TableHead>
-                      <TableHead>Message</TableHead>
-                      <TableHead className="w-32">Status</TableHead>
-                      <TableHead className="w-40">Date</TableHead>
-                      <TableHead className="w-20 text-right">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {loading ? (
+              {/* Feedback list */}
+              {loading ? (
+                <div className="flex justify-center py-10">
+                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+                </div>
+              ) : filteredFeedback.length > 0 ? (
+                <div className="rounded-md border overflow-hidden">
+                  <Table>
+                    <TableHeader>
                       <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          Loading feedback data...
-                        </TableCell>
+                        <TableHead>Type</TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead className="hidden md:table-cell">Email</TableHead>
+                        <TableHead className="hidden md:table-cell">Bus No.</TableHead>
+                        <TableHead className="hidden lg:table-cell">Date</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
-                    ) : filteredFeedback.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">
-                          No feedback found. {searchQuery || typeFilter !== 'all' || statusFilter !== 'all' ? 'Try adjusting your filters.' : ''}
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      filteredFeedback.map((item) => (
+                    </TableHeader>
+                    <TableBody>
+                      {filteredFeedback.map((item) => (
                         <TableRow key={item.id}>
-                          <TableCell>{getTypeBadge(item.feedback_type as FeedbackType)}</TableCell>
                           <TableCell>
-                            <div className="font-medium">{item.name}</div>
-                            <div className="text-sm text-muted-foreground">{item.email}</div>
-                            {item.bus_number && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Bus: {item.bus_number}
-                              </div>
+                            {item.feedback_type === FeedbackType.Complaint && (
+                              <Badge variant="destructive" className="flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" />
+                                Complaint
+                              </Badge>
+                            )}
+                            {item.feedback_type === FeedbackType.Suggestion && (
+                              <Badge variant="outline" className="flex items-center gap-1">
+                                <MessageSquare className="h-3 w-3" />
+                                Suggestion
+                              </Badge>
+                            )}
+                            {item.feedback_type === FeedbackType.Appreciation && (
+                              <Badge variant="default" className="bg-green-600 flex items-center gap-1">
+                                <ThumbsUp className="h-3 w-3" />
+                                Appreciation
+                              </Badge>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <div className="max-w-xs truncate">{item.message}</div>
+                          <TableCell className="font-medium">{item.name}</TableCell>
+                          <TableCell className="hidden md:table-cell">{item.email}</TableCell>
+                          <TableCell className="hidden md:table-cell">{item.bus_number || 'N/A'}</TableCell>
+                          <TableCell className="hidden lg:table-cell">
+                            {new Date(item.created_at).toLocaleDateString()}
                           </TableCell>
-                          <TableCell>{getStatusBadge(item.status as FeedbackStatus)}</TableCell>
                           <TableCell>
-                            <div className="text-sm">{formatDate(item.created_at)}</div>
+                            {item.status === FeedbackStatus.Pending && (
+                              <Badge className="bg-yellow-500">Pending</Badge>
+                            )}
+                            {item.status === FeedbackStatus.InProgress && (
+                              <Badge className="bg-blue-500">In Progress</Badge>
+                            )}
+                            {item.status === FeedbackStatus.Resolved && (
+                              <Badge className="bg-green-500">Resolved</Badge>
+                            )}
+                            {item.status === FeedbackStatus.Closed && (
+                              <Badge variant="outline">Closed</Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="ghost"
                               size="sm"
                               onClick={() => handleViewFeedback(item)}
                             >
@@ -353,79 +327,73 @@ const Reports = () => {
                             </Button>
                           </TableCell>
                         </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center py-10 border rounded-md">
+                  <div className="flex justify-center">
+                    <MessageSquare className="h-10 w-10 text-gray-400" />
+                  </div>
+                  <h3 className="mt-2 text-lg font-medium">No feedback found</h3>
+                  <p className="mt-1 text-gray-500">
+                    {searchQuery || typeFilter !== 'all' || statusFilter !== 'all'
+                      ? "Try adjusting your search or filter criteria"
+                      : "There is no feedback submitted yet"}
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      {/* Feedback detail dialog */}
-      <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
-        <DialogContent className="max-w-3xl bg-background dark:bg-background">
-          <DialogHeader>
-            <DialogTitle className="text-foreground">Feedback Details</DialogTitle>
-            <DialogDescription>
-              View and manage the feedback from {selectedFeedback?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedFeedback && (
-            <div className="space-y-4 mt-4">
-              <Tabs defaultValue="details" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="notes">Admin Notes & Status</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="details" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-sm font-medium mb-1 text-foreground">Name</h4>
-                      <p className="text-foreground">{selectedFeedback.name}</p>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-1 text-foreground">Email</h4>
-                      <p className="text-foreground">{selectedFeedback.email}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <h4 className="text-sm font-medium mb-1 text-foreground">Type</h4>
-                      <div>{getTypeBadge(selectedFeedback.feedback_type as FeedbackType)}</div>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-medium mb-1 text-foreground">Bus Number</h4>
-                      <p className="text-foreground">{selectedFeedback.bus_number || 'Not specified'}</p>
-                    </div>
-                  </div>
-                  
+        {/* Feedback detail dialog */}
+        <Dialog open={feedbackDialogOpen} onOpenChange={setFeedbackDialogOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {selectedFeedback?.feedback_type === FeedbackType.Complaint && (
+                  <AlertCircle className="h-5 w-5 text-red-500" />
+                )}
+                {selectedFeedback?.feedback_type === FeedbackType.Suggestion && (
+                  <MessageSquare className="h-5 w-5 text-blue-500" />
+                )}
+                {selectedFeedback?.feedback_type === FeedbackType.Appreciation && (
+                  <ThumbsUp className="h-5 w-5 text-green-500" />
+                )}
+                <span>
+                  {selectedFeedback?.feedback_type.charAt(0).toUpperCase() + selectedFeedback?.feedback_type.slice(1) || ''} Details
+                </span>
+              </DialogTitle>
+              <DialogDescription>
+                Submitted on {selectedFeedback ? new Date(selectedFeedback.created_at).toLocaleString() : ''}
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedFeedback && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-1 text-foreground">Date Submitted</h4>
-                    <p className="text-foreground">{formatDate(selectedFeedback.created_at)}</p>
+                    <div className="text-sm font-medium">Name</div>
+                    <div>{selectedFeedback.name}</div>
                   </div>
-                  
                   <div>
-                    <h4 className="text-sm font-medium mb-1 text-foreground">Message</h4>
-                    <div className="p-3 border rounded-md bg-muted/50 dark:bg-muted/20 border-border">
-                      <p className="whitespace-pre-wrap text-foreground">{selectedFeedback.message}</p>
-                    </div>
+                    <div className="text-sm font-medium">Email</div>
+                    <div>{selectedFeedback.email}</div>
                   </div>
-                </TabsContent>
-                
-                <TabsContent value="notes" className="space-y-4 mt-4">
                   <div>
-                    <h4 className="text-sm font-medium mb-1 text-foreground">Status</h4>
+                    <div className="text-sm font-medium">Bus Number</div>
+                    <div>{selectedFeedback.bus_number || 'N/A'}</div>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium">Status</div>
                     <Select
                       value={feedbackStatus}
                       onValueChange={(value) => setFeedbackStatus(value as FeedbackStatus)}
                     >
-                      <SelectTrigger className="bg-background dark:bg-background">
-                        <SelectValue placeholder="Select status" />
+                      <SelectTrigger>
+                        <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value={FeedbackStatus.Pending}>Pending</SelectItem>
@@ -435,34 +403,40 @@ const Reports = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div>
-                    <h4 className="text-sm font-medium mb-1 text-foreground">Admin Notes</h4>
-                    <Textarea
-                      placeholder="Add notes about this feedback (only visible to admins)"
-                      value={adminNotes}
-                      onChange={(e) => setAdminNotes(e.target.value)}
-                      rows={6}
-                      className="bg-background dark:bg-background"
-                    />
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium mb-1">Message</div>
+                  <div className="p-3 border rounded-md bg-secondary">
+                    {selectedFeedback.message}
                   </div>
-                  
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => setFeedbackDialogOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={handleUpdateFeedback}>
-                      Save Changes
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                </div>
+
+                <div>
+                  <div className="text-sm font-medium mb-1">Admin Notes</div>
+                  <Textarea
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    placeholder="Add your notes here..."
+                    className="h-24"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-2">
+                  <Button variant="outline" onClick={() => setFeedbackDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleUpdateFeedback}>
+                    Update Status
+                  </Button>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
     </DashboardLayout>
   );
 };
 
-export default Reports; 
+export default Reports;

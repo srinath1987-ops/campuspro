@@ -38,7 +38,7 @@ const Profile = () => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [username, setUsername] = useState(profile?.username || '');
+  const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -48,7 +48,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (profile) {
-      setUsername(profile.username || '');
+      setFullName(profile.full_name || '');
       setPhoneNumber(profile.phone_number || '');
       setAvatarUrl(profile.avatar_url || null);
     }
@@ -69,10 +69,10 @@ const Profile = () => {
   }
 
   const handleProfileUpdate = async () => {
-    if (!username.trim() || !phoneNumber.trim()) {
+    if (!fullName.trim() || !phoneNumber.trim()) {
       toast({
         title: "Missing Information",
-        description: "Username and phone number are required.",
+        description: "Full name and phone number are required.",
         variant: "destructive"
       });
       return;
@@ -81,7 +81,7 @@ const Profile = () => {
     setIsUpdating(true);
     try {
       await updateProfile({
-        username,
+        full_name: fullName,
         phone_number: phoneNumber,
         avatar_url: avatarUrl
       });
@@ -254,9 +254,9 @@ const Profile = () => {
                     <div className="rounded-full relative w-32 h-32 overflow-hidden">
                       {avatarUrl ? (
                         <Avatar className="w-32 h-32">
-                          <AvatarImage src={avatarUrl} alt={username} />
+                          <AvatarImage src={avatarUrl} alt={fullName} />
                           <AvatarFallback className="bus-gradient-bg text-white text-2xl">
-                            {username.charAt(0).toUpperCase()}
+                            {fullName.charAt(0).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
@@ -285,15 +285,15 @@ const Profile = () => {
                   
                   <div className="flex-1 space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="username">Username</Label>
+                      <Label htmlFor="fullName">Full Name</Label>
                       <div className="flex">
                         <div className="bg-muted p-2 rounded-l-md flex items-center border border-r-0 border-input">
                           <User className="h-5 w-5 text-muted-foreground" />
                         </div>
                         <Input
-                          id="username"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
+                          id="fullName"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
                           className="rounded-l-none"
                         />
                       </div>
@@ -307,7 +307,7 @@ const Profile = () => {
                         </div>
                         <Input
                           id="email"
-                          value={profile.email}
+                          value={profile.email || ''}
                           disabled
                           className="rounded-l-none bg-muted"
                         />

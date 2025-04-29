@@ -14,6 +14,11 @@ export interface Profile {
   role: 'admin' | 'driver' | 'user';
   avatar_url?: string;
   phone_number?: string;
+  email?: string;
+  username?: string;
+  bus_number?: string;
+  last_login?: string;
+  created_at?: string;
 }
 
 interface AuthContextType {
@@ -109,9 +114,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     try {
+      // Only include fields that actually exist in the database schema
+      const validUpdates: Record<string, any> = {};
+      if (updates.full_name) validUpdates.full_name = updates.full_name;
+      if (updates.role) validUpdates.role = updates.role;
+      if (updates.avatar_url !== undefined) validUpdates.avatar_url = updates.avatar_url;
+      if (updates.phone_number !== undefined) validUpdates.phone_number = updates.phone_number;
+      if (updates.username !== undefined) validUpdates.username = updates.username;
+      if (updates.bus_number !== undefined) validUpdates.bus_number = updates.bus_number;
+
       const { error } = await supabase
         .from('profiles')
-        .update(updates)
+        .update(validUpdates)
         .eq('id', user.id);
 
       if (error) throw error;

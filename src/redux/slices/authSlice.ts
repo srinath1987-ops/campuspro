@@ -1,19 +1,10 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
+import { Profile } from '@/contexts/AuthContext';
+import { User } from '@supabase/supabase-js';
 
 // Types
-interface User {
-  id: string;
-  email: string;
-}
-
-interface Profile {
-  id: string;
-  full_name: string;
-  role: 'admin' | 'driver' | 'user';
-  avatar_url?: string;
-}
-
 interface AuthState {
   user: User | null;
   profile: Profile | null;
@@ -49,7 +40,7 @@ export const login = createAsyncThunk(
 
       if (profileError) throw profileError;
 
-      return { user: data.user, profile: profileData };
+      return { user: data.user, profile: profileData as Profile };
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -72,13 +63,14 @@ export const signUp = createAsyncThunk(
 
       if (data.user) {
         // Create a profile for the new user with ID matching auth user ID
-        const { error: profileError } = await supabase.from('profiles').insert([
-          {
-            id: data.user.id,
-            full_name: fullName,
-            role,
-          },
-        ]);
+        const { error: profileError } = await supabase.from('profiles').insert({
+          id: data.user.id,
+          full_name: fullName,
+          role,
+          email,
+          username: fullName.toLowerCase().replace(/\s+/g, '_'),
+          phone_number: ''
+        });
 
         if (profileError) throw profileError;
 
@@ -91,7 +83,7 @@ export const signUp = createAsyncThunk(
 
         if (fetchError) throw fetchError;
 
-        return { user: data.user, profile: profileData };
+        return { user: data.user, profile: profileData as Profile };
       }
 
       throw new Error('User registration failed');
@@ -156,7 +148,7 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
 
       if (profileError) throw profileError;
 
-      return { user: data.session.user, profile: profileData };
+      return { user: data.session.user, profile: profileData as Profile };
     }
     
     return { user: null, profile: null };
@@ -184,7 +176,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(login.fulfilled, (state, action: PayloadAction<{ user: User; profile: Profile }>) => {
+    builder.addCase(login.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -199,7 +191,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(signUp.fulfilled, (state, action: PayloadAction<{ user: User; profile: Profile }>) => {
+    builder.addCase(signUp.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -228,7 +220,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(fetchSession.fulfilled, (state, action: PayloadAction<{ user: User | null; profile: Profile | null }>) => {
+    builder.addCase(fetchSession.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
