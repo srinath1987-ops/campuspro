@@ -120,7 +120,7 @@ const Index = () => {
         </div>
       </section>
       
-      {/* Stats Section */}
+      {/* Stats Section
       <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -137,7 +137,7 @@ const Index = () => {
             <StatCard value="99.9%" label="Uptime" />
           </div>
         </div>
-      </section>
+      </section> */}
       
       {/* CTA Section */}
       <section className="bus-gradient-bg py-16 text-white">
