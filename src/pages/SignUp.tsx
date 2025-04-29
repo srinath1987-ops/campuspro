@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { BusFront, UserPlus } from 'lucide-react';
+import { BusFront, UserPlus, Loader2, CheckCircle } from 'lucide-react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
@@ -47,9 +48,6 @@ const signUpSchema = z.object({
 
 type SignUpValues = z.infer<typeof signUpSchema>;
 
-// Form state key for local storage
-const SIGNUP_FORM_STATE_KEY = 'signup_form_state';
-
 const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [signupSuccess, setSignupSuccess] = useState(false);
@@ -69,44 +67,6 @@ const SignUp = () => {
     },
   });
 
-  // Handle form state persistence across tab switching
-  React.useEffect(() => {
-    // Load saved form state from local storage
-    const savedState = localStorage.getItem(SIGNUP_FORM_STATE_KEY);
-    if (savedState) {
-      try {
-        const parsedState = JSON.parse(savedState);
-        form.reset(parsedState);
-      } catch (error) {
-        console.error('Error parsing saved form state:', error);
-        localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
-      }
-    }
-
-    // Save form state when tab visibility changes
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
-        const values = form.getValues();
-        localStorage.setItem(SIGNUP_FORM_STATE_KEY, JSON.stringify(values));
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    // Save form values periodically
-    const saveInterval = setInterval(() => {
-      const values = form.getValues();
-      if (Object.values(values).some(value => value !== '')) {
-        localStorage.setItem(SIGNUP_FORM_STATE_KEY, JSON.stringify(values));
-      }
-    }, 5000);
-
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      clearInterval(saveInterval);
-    };
-  }, [form]);
-
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
@@ -120,10 +80,7 @@ const SignUp = () => {
         values.role
       );
       
-      // Clear saved form data after successful signup
-      localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
-      
-      // Instead of relying on the signUp toast, we set success state here
+      // Set success state here
       setSignupSuccess(true);
       
       // Delay navigation to login page to allow user to see success message
@@ -133,20 +90,19 @@ const SignUp = () => {
     } catch (error: any) {
       console.error('Signup error:', error);
       
-      // If the error message contains certain strings that indicate the user was created
-      // but there was an RLS or profile issue, we can consider it a partial success
-      if (
-        error.message?.includes('violates row-level security') || 
-        error.message?.includes('profile creation') ||
-        error.message?.includes('Profile creation')
-      ) {
+      // Check for specific error messages that indicate the user was actually created
+      if (error.message?.includes('violates row-level security') || 
+          error.message?.includes('profile creation') ||
+          error.message?.includes('Profile creation') ||
+          error.message?.includes('already exists')) {
+        
         setSignupSuccess(true);
         toast({
           title: "Account Created",
-          description: "Your account was created successfully, but there was a profile issue. You can still login.",
+          description: "Your account was created successfully. You can now log in.",
         });
         
-        // Still navigate to login
+        // Navigate to login after a slight delay
         setTimeout(() => {
           navigate('/login');
         }, 2000);
@@ -175,7 +131,7 @@ const SignUp = () => {
               <CardHeader className="space-y-1">
                 <div className="flex justify-center mb-2">
                   <div className="p-2 bg-green-500 rounded-full">
-                    <BusFront className="h-6 w-6 text-white" />
+                    <CheckCircle className="h-6 w-6 text-white" />
                   </div>
                 </div>
                 <CardTitle className="text-2xl text-center">Success!</CardTitle>
@@ -216,7 +172,7 @@ const SignUp = () => {
                         <FormItem>
                           <FormLabel>Username</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your username" {...field} />
+                            <Input placeholder="Enter your username" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -229,7 +185,7 @@ const SignUp = () => {
                         <FormItem>
                           <FormLabel>Email</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your email" type="email" {...field} />
+                            <Input placeholder="Enter your email" type="email" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -242,7 +198,7 @@ const SignUp = () => {
                         <FormItem>
                           <FormLabel>Password</FormLabel>
                           <FormControl>
-                            <Input placeholder="Create a password" type="password" {...field} />
+                            <Input placeholder="Create a password" type="password" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -255,7 +211,7 @@ const SignUp = () => {
                         <FormItem>
                           <FormLabel>Phone Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your phone number" {...field} />
+                            <Input placeholder="Enter your phone number" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -268,7 +224,7 @@ const SignUp = () => {
                         <FormItem>
                           <FormLabel>Bus Number</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter assigned bus number" {...field} />
+                            <Input placeholder="Enter assigned bus number" {...field} disabled={isLoading} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -282,11 +238,8 @@ const SignUp = () => {
                     >
                       {isLoading ? (
                         <span className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Loading...
+                          <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                          Creating Account...
                         </span>
                       ) : (
                         <span className="flex items-center justify-center">

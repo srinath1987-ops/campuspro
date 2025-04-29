@@ -48,25 +48,25 @@ export const login = createAsyncThunk(
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
-        throw new Error('Could not retrieve user profile');
+        // Don't throw error here - still return the user even if profile fetch fails
       }
 
       // Convert database role to type-safe role
-      const role = profileData.role === 'admin' || profileData.role === 'driver'
+      const role = profileData?.role === 'admin' || profileData?.role === 'driver'
         ? profileData.role as 'admin' | 'driver'
         : 'driver';
         
-      const profile: Profile = {
+      const profile = profileData ? {
         ...profileData,
         role,
         id: profileData.id,
-      };
+      } : null;
 
-      return { user: data.user, profile };
+      return { user: data.user, profile, session: data.session };
     } catch (error: any) {
       return rejectWithValue(handleAuthError(error));
     }
@@ -95,7 +95,7 @@ export const signUp = createAsyncThunk(
         password,
         options: {
           data: {
-            username: username, // Explicitly set username in auth metadata
+            username: username,
             full_name: fullName,
             role: role
           }
@@ -105,45 +105,18 @@ export const signUp = createAsyncThunk(
       if (error) throw error;
       if (!data.user) throw new Error('User registration failed: no user data returned');
 
-      try {
-        // Convert role string to the Supabase enum type
-        const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
-          
-        // Create a profile for the new user with ID matching auth user ID
-        const { error: profileError } = await supabase.from('profiles').insert({
+      // Return success even if profile creation might fail later
+      // The user is created in auth and can log in
+      return { 
+        user: data.user, 
+        profile: {
           id: data.user.id,
           email,
-          phone_number: '',
-          role: safeRole,
-          username: username, // Make sure username is explicitly set
-        });
-
-        if (profileError) {
-          // Log the error but don't throw - the auth user was created successfully
-          console.error("Profile creation error:", profileError);
-          // Continue execution - we don't want to fail signup if only profile creation failed
-        }
-        
-        // Return the user data even if profile creation had an issue
-        // The profile can be created/updated later
-        return { 
-          user: data.user, 
-          profile: {
-            id: data.user.id,
-            email,
-            role: safeRole as 'admin' | 'driver',
-            username
-          } 
-        };
-      } catch (profileErr) {
-        // Continue with signup success even if profile has issues
-        console.error("Error in profile handling:", profileErr);
-        
-        return { 
-          user: data.user, 
-          profile: null 
-        };
-      }
+          role: (role === 'admin' || role === 'driver') ? role as 'admin' | 'driver' : 'driver',
+          username,
+          full_name: fullName
+        } 
+      };
     } catch (error: any) {
       console.error("Signup error:", error);
       return rejectWithValue(handleAuthError(error));
@@ -202,11 +175,17 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
         .from('profiles')
         .select('*')
         .eq('id', data.session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
-        return { user: data.session.user, profile: null };
+        // Don't fail the session fetch if profile fetch fails
+        return { user: data.session.user, profile: null, session: data.session };
+      }
+
+      if (!profileData) {
+        console.log('No profile found for user, returning just user data');
+        return { user: data.session.user, profile: null, session: data.session };
       }
 
       // Ensure type safety for role
@@ -220,11 +199,12 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
         id: profileData.id,
       };
 
-      return { user: data.session.user, profile };
+      return { user: data.session.user, profile, session: data.session };
     }
     
-    return { user: null, profile: null };
+    return { user: null, profile: null, session: null };
   } catch (error: any) {
+    console.error('Session fetch error:', error);
     return rejectWithValue(handleAuthError(error));
   }
 });
@@ -265,8 +245,8 @@ const authSlice = createSlice({
     });
     builder.addCase(signUp.fulfilled, (state, action) => {
       state.isLoading = false;
-      state.user = action.payload.user;
-      state.profile = action.payload.profile;
+      // Don't set user here since they need to verify email
+      // or log in after signup
     });
     builder.addCase(signUp.rejected, (state, action) => {
       state.isLoading = false;

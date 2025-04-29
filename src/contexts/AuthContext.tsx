@@ -50,6 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const navigate = useNavigate();
   const [session, setSession] = useState<Session | null>(null);
+  const [authInitialized, setAuthInitialized] = useState(false);
   
   useEffect(() => {
     let isMounted = true;
@@ -59,6 +60,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       async (event, currentSession) => {
         // Only process events if the component is still mounted
         if (!isMounted) return;
+
+        if (currentSession) {
+          setSession(currentSession);
+        } else {
+          setSession(null);
+        }
         
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
           // Use setTimeout to prevent potential deadlocks with Supabase client
@@ -76,7 +83,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Initialize auth on component mount
-    dispatch(fetchSession());
+    const initAuth = async () => {
+      try {
+        await dispatch(fetchSession()).unwrap();
+      } catch (error) {
+        console.error('Failed to fetch session:', error);
+      } finally {
+        if (isMounted) {
+          setAuthInitialized(true);
+        }
+      }
+    };
+    
+    initAuth();
 
     return () => {
       isMounted = false;
@@ -199,24 +218,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const validRole = (role === 'admin' || role === 'driver') ? role : 'driver';
       
       // Call the Redux signUp action with the fullName parameter
-      const result = await dispatch(reduxSignUp({ 
+      await dispatch(reduxSignUp({ 
         email, 
         password, 
         fullName, 
         role: validRole 
       })).unwrap();
 
-      // If we got here, the user was created in the auth system
-      // Show success message even if there was a profile creation issue
+      // Show success message
       toast({
         title: 'Account created',
-        description: result.profile 
-          ? 'Your account has been created successfully' 
-          : 'Account created, but your profile may need to be completed later',
+        description: 'Your account has been created successfully. Please check your email to verify your account.',
       });
       
       // Navigate to login page
       navigate('/login');
+      
+      return;
     } catch (error: any) {
       toast({
         title: 'Sign Up Error',
@@ -234,7 +252,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Email and password are required');
       }
       
-      await dispatch(login({ email, password })).unwrap();
+      const result = await dispatch(login({ email, password })).unwrap();
+      
+      if (result.user) {
+        toast({
+          title: 'Welcome back',
+          description: 'You have successfully logged in',
+        });
+        
+        // Wait to make sure the session is properly stored
+        setTimeout(() => {
+          // Redirect based on user role
+          if (result.profile?.role === 'admin') {
+            navigate('/admin/dashboard');
+          } else {
+            navigate('/driver/dashboard');
+          }
+        }, 100);
+      }
     } catch (error: any) {
       toast({
         title: 'Sign In Error',
@@ -247,9 +282,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     try {
-      // Clear state immediately to prevent UI freezing
-      setSession(null);
-      
       // Set flag to indicate we're logging out (will be checked in ProtectedRoute)
       sessionStorage.setItem('just_logged_out', 'true');
       
@@ -281,10 +313,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .from('profiles')
         .select('role')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
       
       if (error) throw error;
-      return data.role;
+      return data?.role || null;
     } catch (error) {
       console.error('Error fetching user role:', error);
       return null;
@@ -297,7 +329,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         session,
         user,
         profile,
-        isLoading,
+        isLoading: isLoading || !authInitialized,
         signUp,
         signIn,
         signOut,

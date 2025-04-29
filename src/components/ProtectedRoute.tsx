@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState, useRef } from 'react';
-import { Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { fetchSession } from '@/redux/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
@@ -126,7 +126,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     }
-  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate, visibilityChangeRef.current]);
+  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate]);
 
   // If we're logging out, don't show loading indicator
   if (loggingOut) {
