@@ -16,6 +16,14 @@ export const formatErrorMessage = (error: any): string => {
     return 'This record already exists';
   }
 
+  if (error?.code === '23502') {
+    // Handle NOT NULL constraint violations
+    if (error?.message?.includes('driver_name')) {
+      return 'Driver name is required';
+    }
+    return 'A required field is missing';
+  }
+
   // Handle network errors
   if (error?.message?.includes('Failed to fetch') || 
       error?.message?.includes('NetworkError') ||

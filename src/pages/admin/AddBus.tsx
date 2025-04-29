@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/card";
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { formatErrorMessage, logError } from '@/utils/errorHandlers';
 
 // Define the form schema
 const busFormSchema = z.object({
@@ -115,10 +116,10 @@ const AddBus = () => {
         if (error) throw error;
         setDrivers(data || []);
       } catch (error) {
-        console.error('Error fetching drivers:', error);
+        logError('FetchDrivers', error);
         toast({
           title: 'Error',
-          description: 'Failed to load drivers. Please try again.',
+          description: formatErrorMessage(error) || 'Failed to load drivers. Please try again.',
           variant: 'destructive',
         });
       } finally {
@@ -142,19 +143,25 @@ const AddBus = () => {
   const onSubmit = async (values: BusFormValues) => {
     setIsSubmitting(true);
     try {
-      // console.log("Submitting bus form:", values);
+      console.log("Submitting bus form:", values);
+      
+      // Ensure driver_name is not null or empty
+      if (!values.driver_name?.trim()) {
+        throw new Error("Driver name is required");
+      }
       
       // Insert into bus_details table
       const { data: busData, error: busError } = await supabase
         .from('bus_details')
         .insert({
           bus_number: values.bus_number,
-          bus_capacity: values.bus_capacity, // This is now correctly a number
+          bus_capacity: values.bus_capacity,
           rfid_id: values.rfid_id,
-          driver_name: values.driver_name,
+          driver_name: values.driver_name.trim(),
           driver_phone: values.driver_phone,
           start_point: values.start_point,
           in_campus: false,
+          last_updated: new Date().toISOString(),
         });
         
       if (busError) throw busError;
@@ -190,11 +197,11 @@ const AddBus = () => {
       // Navigate back to buses list
       navigate('/admin/buses');
       
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error adding bus:', error);
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add bus. Please try again.',
+        description: formatErrorMessage(error) || 'Failed to add bus. Please try again.',
         variant: 'destructive',
       });
     } finally {

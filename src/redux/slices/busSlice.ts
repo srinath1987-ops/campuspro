@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
+import { formatErrorMessage, logError } from '@/utils/errorHandlers';
 
 // Types
 export interface Bus {
@@ -14,8 +15,8 @@ export interface Bus {
   out_time?: string | null;
   start_point: string;
   last_updated: string;
-  created_at: string; // Required now, not optional
-  student_count?: number; // Optional since it's added dynamically
+  created_at: string;
+  student_count?: number;
 }
 
 export interface BusEntry {
@@ -75,28 +76,26 @@ export const fetchBuses = createAsyncThunk('buses/fetchBuses', async (_, { rejec
         .limit(1);
         
       if (countError) {
-        console.error('Error fetching count:', countError);
+        logError('FetchBusCount', countError);
         return { 
           ...bus, 
-          // Adding missing properties required by the Bus interface
           id: bus.rfid_id, // Use RFID as ID for existing buses
-          created_at: new Date().toISOString(), // Default for existing records
+          created_at: bus.last_updated || new Date().toISOString(), // Default if missing
           student_count: 0 
         };
       }
       
       return { 
         ...bus,
-        // Adding missing properties required by the Bus interface
         id: bus.rfid_id, // Use RFID as ID for existing buses
-        created_at: new Date().toISOString(), // Default for existing records
+        created_at: bus.last_updated || new Date().toISOString(), // Default if missing
         student_count: countData && countData.length > 0 ? countData[0].student_count : 0 
       };
     }));
 
     return busesWithCount as Bus[];
   } catch (error: any) {
-    return rejectWithValue(error.message);
+    return rejectWithValue(formatErrorMessage(error));
   }
 });
 
@@ -115,7 +114,7 @@ export const fetchBusEntries = createAsyncThunk(
 
       return data as BusEntry[];
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(formatErrorMessage(error));
     }
   }
 );
@@ -139,7 +138,7 @@ export const fetchStudentCounts = createAsyncThunk(
 
       return data as DailyStudentCount[];
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(formatErrorMessage(error));
     }
   }
 );
@@ -148,6 +147,8 @@ export const addBus = createAsyncThunk(
   'buses/addBus',
   async (busData: Omit<Bus, 'id' | 'created_at' | 'last_updated'>, { rejectWithValue }) => {
     try {
+      const now = new Date().toISOString();
+      
       // Make sure the object we're sending matches what Supabase expects
       const supabaseData = {
         bus_number: busData.bus_number,
@@ -157,6 +158,7 @@ export const addBus = createAsyncThunk(
         bus_capacity: busData.bus_capacity,
         start_point: busData.start_point,
         in_campus: busData.in_campus || false,
+        last_updated: now,
       };
 
       const { data, error } = await supabase
@@ -170,11 +172,11 @@ export const addBus = createAsyncThunk(
       // Add the missing properties required by our interface
       return {
         ...data,
-        id: data.rfid_id, // Use RFID as ID for now
-        created_at: new Date().toISOString(),
+        id: data.rfid_id, // Use RFID as ID
+        created_at: data.last_updated || now,
       } as Bus;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(formatErrorMessage(error));
     }
   }
 );
@@ -196,10 +198,10 @@ export const updateBus = createAsyncThunk(
       return {
         ...data,
         id: data.rfid_id, // Use RFID as ID for consistency
-        created_at: new Date().toISOString(), // Ensure created_at field is present
+        created_at: data.last_updated || new Date().toISOString(), // Ensure created_at field is present
       } as Bus;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(formatErrorMessage(error));
     }
   }
 );
@@ -217,7 +219,7 @@ export const deleteBus = createAsyncThunk(
 
       return id;
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(formatErrorMessage(error));
     }
   }
 );
