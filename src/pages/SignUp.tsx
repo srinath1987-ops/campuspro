@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { BusFront, UserPlus } from 'lucide-react';
@@ -24,6 +23,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
@@ -54,6 +54,7 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
@@ -108,19 +109,34 @@ const SignUp = () => {
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
-      // Updated: Adjust the signUp function call to match the expected parameters
-      // in AuthContext.tsx, the signUp function expects (email, password, fullName, role)
+      // Fixed: Adjust parameters to match the signUp function in AuthContext
       await signUp(
         values.email, 
         values.password, 
-        values.username, 
+        values.username,
         values.role
       );
+      
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
+      
+      // Show success message
+      toast({
+        title: "Account created",
+        description: "Your account has been created successfully",
+        variant: "default" // Use "default" instead of "success"
+      });
+      
       navigate('/login');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Signup error:', error);
+      // Enhanced error handling
+      const errorMessage = error?.message || 'Failed to sign up. Please try again.';
+      toast({
+        title: "Sign Up Error",
+        description: errorMessage,
+        variant: "destructive"
+      });
     } finally {
       setIsLoading(false);
     }
