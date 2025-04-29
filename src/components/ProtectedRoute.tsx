@@ -25,6 +25,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const [loggingOut, setLoggingOut] = useState(false);
   const visibilityChangeRef = useRef<boolean>(false);
   const sessionCheckRef = useRef<boolean>(false);
+  const initialCheckDoneRef = useRef<boolean>(false);
   
   // Check if we're in a logout process using URL or session storage
   useEffect(() => {
@@ -43,8 +44,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     let isMounted = true;
     
     const checkSession = async () => {
-      if (!user && !loggingOut && !sessionCheckRef.current) {
+      if (!user && !loggingOut && !sessionCheckRef.current && !initialCheckDoneRef.current) {
         sessionCheckRef.current = true;
+        initialCheckDoneRef.current = true;
         try {
           await dispatch(fetchSession()).unwrap();
         } catch (err) {
@@ -55,7 +57,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
             // Reset the session check flag after some time to allow future checks
             setTimeout(() => {
               sessionCheckRef.current = false;
-            }, 10000); // Wait 10 seconds before allowing another check
+            }, 3000); // Wait 3 seconds before allowing another check
           }
         }
       } else {
@@ -75,8 +77,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // Handle visibility change to prevent unnecessary reloads
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !initialCheckDoneRef.current) {
         visibilityChangeRef.current = true;
+        
+        // Check session when tab becomes visible again
+        dispatch(fetchSession());
         
         // Wait a short delay before allowing redirects again
         setTimeout(() => {
@@ -90,7 +95,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, []);
+  }, [dispatch]);
   
   // Handle authentication notifications and redirects
   useEffect(() => {
@@ -126,7 +131,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     }
-  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate, visibilityChangeRef.current]);
+  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate]);
 
   // If we're logging out, don't show loading indicator
   if (loggingOut) {

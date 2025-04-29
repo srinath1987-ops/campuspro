@@ -27,6 +27,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useAppDispatch } from '@/redux/hooks';
+import { signUp } from '@/redux/slices/authSlice';
 
 // Define the sign-up form schema with default values for driver_name
 const signUpSchema = z.object({
@@ -53,7 +55,7 @@ const SIGNUP_FORM_STATE_KEY = 'signup_form_state';
 
 const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -112,13 +114,14 @@ const SignUp = () => {
     try {
       console.log("Submitting signup with values:", values);
       
-      // Pass the username value consistently as the fullName parameter
-      await signUp(
-        values.email, 
-        values.password, 
-        values.username, // Pass username as the fullName parameter
-        values.role
-      );
+      // Use Redux action directly to ensure all necessary values are passed
+      await dispatch(signUp({
+        email: values.email,
+        password: values.password,
+        fullName: values.username,
+        role: values.role,
+        phone: values.phone
+      })).unwrap();
       
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);

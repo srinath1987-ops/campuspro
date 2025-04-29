@@ -272,6 +272,10 @@ export type Database = {
         Args: Record<PropertyKey, never> | { user_id: string }
         Returns: string
       }
+      get_user_role_safely: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       update_bus_status: {
         Args: { rfid_id: string; event_type: string }
         Returns: Json

@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/contexts/AuthContext';
@@ -20,6 +21,7 @@ const initialState: AuthState = {
 
 // Helper function to handle errors
 const handleAuthError = (error: any): string => {
+  console.error("Auth error:", error);
   if (error?.message) return error.message;
   if (typeof error === 'string') return error;
   return 'An unknown authentication error occurred';
@@ -47,23 +49,23 @@ export const login = createAsyncThunk(
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Profile fetch error:', profileError);
-        throw new Error('Could not retrieve user profile');
+        // Don't throw error here, just return null profile
       }
 
       // Convert database role to type-safe role
-      const role = profileData.role === 'admin' || profileData.role === 'driver'
+      const role = profileData?.role === 'admin' || profileData?.role === 'driver'
         ? profileData.role as 'admin' | 'driver'
         : 'driver';
         
-      const profile: Profile = {
+      const profile: Profile | null = profileData ? {
         ...profileData,
         role,
         id: profileData.id,
-      };
+      } : null;
 
       return { user: data.user, profile };
     } catch (error: any) {
@@ -75,7 +77,8 @@ export const login = createAsyncThunk(
 export const signUp = createAsyncThunk(
   'auth/signUp',
   async (
-    { email, password, fullName, role }: { email: string; password: string; fullName: string; role: string },
+    { email, password, fullName, role, phone }: 
+    { email: string; password: string; fullName: string; role: string; phone: string },
     { rejectWithValue }
   ) => {
     try {
@@ -111,7 +114,7 @@ export const signUp = createAsyncThunk(
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
         email,
-        phone_number: '',
+        phone_number: phone || '',
         role: safeRole,
         username: username, // Make sure username is explicitly set
       });
@@ -127,16 +130,19 @@ export const signUp = createAsyncThunk(
         .from('profiles')
         .select('*')
         .eq('id', data.user.id)
-        .single();
+        .maybeSingle();
 
-      if (fetchError) throw new Error(`Could not retrieve created profile: ${fetchError.message}`);
+      if (fetchError) {
+        console.error("Error fetching profile:", fetchError);
+        // Don't throw, just return null profile
+      }
 
       // Ensure type safety for role
-      const typeSafeProfile: Profile = {
+      const typeSafeProfile: Profile | null = profileData ? {
         ...profileData,
         role: profileData.role as 'admin' | 'driver',
         id: profileData.id,
-      };
+      } : null;
 
       return { user: data.user, profile: typeSafeProfile };
     } catch (error: any) {
@@ -165,7 +171,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
     }
     
     // Set a flag that we're logging out
-    sessionStorage.setItem('logging_out', 'true');
+    sessionStorage.setItem('just_logged_out', 'true');
     
     // Reset auth state in Redux immediately to prevent loading screens
     dispatch(resetAuthState());
@@ -197,25 +203,29 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
         .from('profiles')
         .select('*')
         .eq('id', data.session.user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching profile:', profileError);
         return { user: data.session.user, profile: null };
       }
 
-      // Ensure type safety for role
-      const role = profileData.role === 'admin' || profileData.role === 'driver'
-        ? profileData.role as 'admin' | 'driver'
-        : 'driver';
-      
-      const profile: Profile = {
-        ...profileData,
-        role,
-        id: profileData.id,
-      };
+      // Ensure type safety for role if profile exists
+      if (profileData) {
+        const role = profileData.role === 'admin' || profileData.role === 'driver'
+          ? profileData.role as 'admin' | 'driver'
+          : 'driver';
+        
+        const profile: Profile = {
+          ...profileData,
+          role,
+          id: profileData.id,
+        };
 
-      return { user: data.session.user, profile };
+        return { user: data.session.user, profile };
+      }
+
+      return { user: data.session.user, profile: null };
     }
     
     return { user: null, profile: null };
