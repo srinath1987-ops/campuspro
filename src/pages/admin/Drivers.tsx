@@ -1,55 +1,24 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Search, Plus, Phone, Mail, Truck, Eye, Pencil, Trash2, Save } from 'lucide-react';
+import { User, Search, Phone, Mail, Truck, Eye, Pencil, Trash2 } from 'lucide-react';
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
-  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
 import DashboardLayout from '@/components/DashboardLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -66,43 +35,12 @@ type Driver = {
   last_login: string | null;
 };
 
-// Define the Bus type (simplified for selection)
-type Bus = {
-  bus_number: string;
-  rfid_id: string;
-};
-
-// Define the form schema using Zod
-const driverFormSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email address." }),
-  username: z.string().min(3, { message: "Username must be at least 3 characters." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
-  phone: z.string().min(5, { message: "Please enter a valid phone number." }),
-  bus_number: z.string().optional(),
-});
-
-type DriverFormValues = z.infer<typeof driverFormSchema>;
-
 const Drivers = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
-  const [buses, setBuses] = useState<Bus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedDriver, setExpandedDriver] = useState<string | null>(null);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const { toast } = useToast();
-
-  // Initialize react-hook-form
-  const form = useForm<DriverFormValues>({
-    resolver: zodResolver(driverFormSchema),
-    defaultValues: {
-      email: "",
-      username: "",
-      password: "",
-      phone: "",
-      bus_number: "",
-    },
-  });
 
   // Fetch drivers data
   useEffect(() => {
@@ -117,16 +55,8 @@ const Drivers = () => {
 
         if (driversError) throw driversError;
 
-        // Fetch buses for the add driver form
-        const { data: busesData, error: busesError } = await supabase
-          .from('bus_details')
-          .select('bus_number, rfid_id');
-
-        if (busesError) throw busesError;
-
         // Process the data
         setDrivers(driversData || []);
-        setBuses(busesData || []);
       } catch (error) {
         console.error('Error fetching data:', error);
         toast({
@@ -161,7 +91,6 @@ const Drivers = () => {
     const date = new Date(dateString);
     return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
-
 
   return (
     <DashboardLayout title="Driver Management" role="admin" currentPath="/admin/drivers">

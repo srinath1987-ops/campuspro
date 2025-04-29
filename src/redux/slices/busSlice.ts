@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 import { formatErrorMessage, logError } from '@/utils/errorHandlers';
@@ -80,6 +81,7 @@ export const fetchBuses = createAsyncThunk('buses/fetchBuses', async (_, { rejec
         return { 
           ...bus, 
           id: bus.rfid_id, // Use RFID as ID for existing buses
+          driver_name: bus.driver_name || 'Unknown Driver', // Default driver name 
           created_at: bus.last_updated || new Date().toISOString(), // Default if missing
           student_count: 0 
         };
@@ -88,6 +90,7 @@ export const fetchBuses = createAsyncThunk('buses/fetchBuses', async (_, { rejec
       return { 
         ...bus,
         id: bus.rfid_id, // Use RFID as ID for existing buses
+        driver_name: bus.driver_name || 'Unknown Driver', // Default driver name
         created_at: bus.last_updated || new Date().toISOString(), // Default if missing
         student_count: countData && countData.length > 0 ? countData[0].student_count : 0 
       };
@@ -149,12 +152,16 @@ export const addBus = createAsyncThunk(
     try {
       const now = new Date().toISOString();
       
+      // Make sure driver_name is never null
+      const driverName = busData.driver_name?.trim() || 'Unknown Driver';
+      const driverPhone = busData.driver_phone || '000-000-0000';
+      
       // Make sure the object we're sending matches what Supabase expects
       const supabaseData = {
         bus_number: busData.bus_number,
         rfid_id: busData.rfid_id,
-        driver_name: busData.driver_name,
-        driver_phone: busData.driver_phone,
+        driver_name: driverName,
+        driver_phone: driverPhone,
         bus_capacity: busData.bus_capacity,
         start_point: busData.start_point,
         in_campus: busData.in_campus || false,
@@ -173,6 +180,7 @@ export const addBus = createAsyncThunk(
       return {
         ...data,
         id: data.rfid_id, // Use RFID as ID
+        driver_name: data.driver_name || 'Unknown Driver',
         created_at: data.last_updated || now,
       } as Bus;
     } catch (error: any) {
@@ -185,6 +193,11 @@ export const updateBus = createAsyncThunk(
   'buses/updateBus',
   async ({ id, busData }: { id: string; busData: Partial<Bus> }, { rejectWithValue }) => {
     try {
+      // Handle driver_name to prevent null values
+      if ('driver_name' in busData && (!busData.driver_name || busData.driver_name.trim() === '')) {
+        busData.driver_name = 'Unknown Driver';
+      }
+      
       const { data, error } = await supabase
         .from('bus_details')
         .update(busData)
@@ -198,6 +211,7 @@ export const updateBus = createAsyncThunk(
       return {
         ...data,
         id: data.rfid_id, // Use RFID as ID for consistency
+        driver_name: data.driver_name || 'Unknown Driver',
         created_at: data.last_updated || new Date().toISOString(), // Ensure created_at field is present
       } as Bus;
     } catch (error: any) {

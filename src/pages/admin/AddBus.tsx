@@ -43,14 +43,14 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { formatErrorMessage, logError } from '@/utils/errorHandlers';
 
-// Define the form schema
+// Define the form schema with stricter validation
 const busFormSchema = z.object({
   bus_number: z.string().min(2, { message: "Bus number is required" }),
   bus_capacity: z.coerce.number().min(1, { message: "Bus capacity must be at least 1" }),
   rfid_id: z.string().min(2, { message: "RFID ID is required" }),
   driver_id: z.string().optional(),
-  driver_name: z.string().min(2, { message: "Driver name is required" }),
-  driver_phone: z.string().min(5, { message: "Driver phone is required" }),
+  driver_name: z.string().min(1, { message: "Driver name is required" }).default("Unknown Driver"),
+  driver_phone: z.string().min(5, { message: "Driver phone is required" }).default("000-000-0000"),
   start_point: z.string().min(2, { message: "Start point is required" }),
   via: z.string().optional(),
   stops: z.array(
@@ -72,6 +72,9 @@ type Driver = {
   bus_number: string | null;
 };
 
+// Form state key for local storage
+const FORM_STATE_KEY = 'bus_form_state';
+
 const AddBus = () => {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -87,8 +90,8 @@ const AddBus = () => {
       bus_capacity: 0,
       rfid_id: "",
       driver_id: "",
-      driver_name: "",
-      driver_phone: "",
+      driver_name: "Unknown Driver", // Default value to prevent null
+      driver_phone: "000-000-0000",  // Default value to prevent null
       start_point: "",
       via: "",
       stops: [
@@ -102,6 +105,48 @@ const AddBus = () => {
     control: form.control,
     name: "stops",
   });
+
+  // Load saved form state from local storage on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem(FORM_STATE_KEY);
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState) as BusFormValues;
+        form.reset(parsedState);
+      } catch (error) {
+        console.error('Error parsing saved form state:', error);
+        // Clear invalid state
+        localStorage.removeItem(FORM_STATE_KEY);
+      }
+    }
+  }, [form]);
+
+  // Save form state on tab visibility change and form values change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const currentValues = form.getValues();
+        localStorage.setItem(FORM_STATE_KEY, JSON.stringify(currentValues));
+      }
+    };
+
+    // Save on visibility change
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // Save on form values change (debounced)
+    const saveTimeout = setTimeout(() => {
+      const subscription = form.watch((value) => {
+        localStorage.setItem(FORM_STATE_KEY, JSON.stringify(value));
+      });
+      
+      return () => subscription.unsubscribe();
+    }, 1000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearTimeout(saveTimeout);
+    };
+  }, [form]);
 
   // Fetch available drivers
   useEffect(() => {
@@ -136,6 +181,10 @@ const AddBus = () => {
     if (selectedDriver) {
       form.setValue("driver_name", selectedDriver.username);
       form.setValue("driver_phone", selectedDriver.phone_number);
+    } else {
+      // If no driver is selected, set default values
+      form.setValue("driver_name", "Unknown Driver"); 
+      form.setValue("driver_phone", "000-000-0000");
     }
   };
 
@@ -146,9 +195,8 @@ const AddBus = () => {
       console.log("Submitting bus form:", values);
       
       // Ensure driver_name is not null or empty
-      if (!values.driver_name?.trim()) {
-        throw new Error("Driver name is required");
-      }
+      const driverName = values.driver_name?.trim() || "Unknown Driver";
+      const driverPhone = values.driver_phone || "000-000-0000";
       
       // Insert into bus_details table
       const { data: busData, error: busError } = await supabase
@@ -157,8 +205,8 @@ const AddBus = () => {
           bus_number: values.bus_number,
           bus_capacity: values.bus_capacity,
           rfid_id: values.rfid_id,
-          driver_name: values.driver_name.trim(),
-          driver_phone: values.driver_phone,
+          driver_name: driverName,
+          driver_phone: driverPhone,
           start_point: values.start_point,
           in_campus: false,
           last_updated: new Date().toISOString(),
@@ -189,6 +237,9 @@ const AddBus = () => {
         if (driverError) throw driverError;
       }
       
+      // Clear saved form state after successful submission
+      localStorage.removeItem(FORM_STATE_KEY);
+      
       toast({
         title: 'Success',
         description: `Bus ${values.bus_number} has been added successfully.`,
@@ -208,6 +259,21 @@ const AddBus = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Show warning when user tries to leave with unsaved changes
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (form.formState.isDirty) {
+        // Standard method to show confirmation dialog
+        e.preventDefault();
+        e.returnValue = '';
+        return '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [form.formState.isDirty]);
 
   return (
     <DashboardLayout title="Add New Bus" role="admin" currentPath="/admin/buses">

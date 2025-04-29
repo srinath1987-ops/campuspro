@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { BusFront, UserPlus } from 'lucide-react';
@@ -22,17 +23,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
+// Define the sign-up form schema with default values for driver_name
 const signUpSchema = z.object({
   username: z.string().min(3, {
     message: "Username must be at least 3 characters.",
@@ -52,6 +47,9 @@ const signUpSchema = z.object({
 
 type SignUpValues = z.infer<typeof signUpSchema>;
 
+// Form state key for local storage
+const SIGNUP_FORM_STATE_KEY = 'signup_form_state';
+
 const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
@@ -69,7 +67,43 @@ const SignUp = () => {
     },
   });
 
-  const watchRole = form.watch("role");
+  // Handle form state persistence across tab switching
+  React.useEffect(() => {
+    // Load saved form state from local storage
+    const savedState = localStorage.getItem(SIGNUP_FORM_STATE_KEY);
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        form.reset(parsedState);
+      } catch (error) {
+        console.error('Error parsing saved form state:', error);
+        localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
+      }
+    }
+
+    // Save form state when tab visibility changes
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden') {
+        const values = form.getValues();
+        localStorage.setItem(SIGNUP_FORM_STATE_KEY, JSON.stringify(values));
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Save form values periodically
+    const saveInterval = setInterval(() => {
+      const values = form.getValues();
+      if (Object.values(values).some(value => value !== '')) {
+        localStorage.setItem(SIGNUP_FORM_STATE_KEY, JSON.stringify(values));
+      }
+    }, 5000);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(saveInterval);
+    };
+  }, [form]);
 
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
@@ -78,8 +112,12 @@ const SignUp = () => {
         values.email, 
         values.password, 
         values.username, 
-        values.role
+        values.role,
+        values.phone,
+        values.bus_number
       );
+      // Clear saved form data after successful signup
+      localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
       navigate('/login');
     } catch (error) {
       console.error('Signup error:', error);

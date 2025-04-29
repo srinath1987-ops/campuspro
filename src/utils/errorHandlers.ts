@@ -19,9 +19,19 @@ export const formatErrorMessage = (error: any): string => {
   if (error?.code === '23502') {
     // Handle NOT NULL constraint violations
     if (error?.message?.includes('driver_name')) {
-      return 'Driver name is required';
+      return 'Driver name is required. Please provide a valid driver name.';
     }
-    return 'A required field is missing';
+    
+    if (error?.message?.includes('bus_number')) {
+      return 'Bus number is required';
+    }
+    
+    if (error?.message?.includes('rfid_id')) {
+      return 'RFID ID is required';
+    }
+    
+    // Generic message for other NOT NULL violations
+    return 'A required field is missing. Please check your form and try again.';
   }
 
   // Handle network errors

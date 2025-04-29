@@ -1,3 +1,4 @@
+
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.4';
 const corsHeaders = {
@@ -40,11 +41,13 @@ serve(async (req)=>{
       throw new Error(`Bus not found with RFID: ${rfid_id}`);
     }
     
+    // Always ensure driver_name has a value before proceeding
+    const driverName = busData.driver_name || 'Unknown Driver';
     if (!busData.driver_name) {
-      // Update the driver name to a default value if missing to avoid NOT NULL constraint
+      // Update the driver name to a default value if missing
       const { error: updateDriverError } = await supabase
         .from('bus_details')
-        .update({ driver_name: 'Unknown Driver' })
+        .update({ driver_name: driverName })
         .eq('rfid_id', rfid_id);
         
       if (updateDriverError) {
