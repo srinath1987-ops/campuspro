@@ -108,13 +108,13 @@ const SignUp = () => {
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
+      // Updated: Adjust the signUp function call to match the expected parameters
+      // in AuthContext.tsx, the signUp function expects (email, password, fullName, role)
       await signUp(
         values.email, 
         values.password, 
         values.username, 
-        values.role,
-        values.phone,
-        values.bus_number
+        values.role
       );
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
