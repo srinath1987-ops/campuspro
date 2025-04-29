@@ -1,11 +1,10 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import { fetchSession } from "./redux/slices/authSlice";
 import { ThemeProvider } from "./components/theme-provider";
@@ -34,7 +33,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: false, // Prevent refetching when window regains focus
     },
   },
 });
@@ -45,6 +44,7 @@ const AppContent = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [appInitialized, setAppInitialized] = useState(false);
+  const sessionCheckIntervalRef = useRef<number | null>(null);
 
   // Initialize auth session on app start
   useEffect(() => {
@@ -60,15 +60,39 @@ const AppContent = () => {
     
     initializeApp();
     
-    // Set up periodic session check to prevent disconnections
-    const sessionCheckInterval = setInterval(() => {
-      dispatch(fetchSession());
+    // Set up periodic session check to prevent disconnections, but don't reload the app
+    sessionCheckIntervalRef.current = window.setInterval(() => {
+      // Only check session if the document is visible to prevent unnecessary reloads
+      if (document.visibilityState === 'visible') {
+        dispatch(fetchSession());
+      }
     }, 5 * 60 * 1000); // Check every 5 minutes
     
+    // Clean up interval on component unmount
     return () => {
-      clearInterval(sessionCheckInterval);
+      if (sessionCheckIntervalRef.current) {
+        clearInterval(sessionCheckIntervalRef.current);
+      }
     };
   }, [dispatch]);
+
+  // Handle visibility change events
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      // Don't do anything that would trigger a reload when tab becomes visible again
+      // Just make sure session is still valid if needed
+      if (document.visibilityState === 'visible' && user) {
+        // Check session but don't force reload
+        dispatch(fetchSession());
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [dispatch, user]);
 
   // Redirect to login page if session is lost, except for public routes
   useEffect(() => {

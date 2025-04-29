@@ -10,8 +10,8 @@ import { useNavigate } from 'react-router-dom';
 // Types
 export interface Profile {
   id: string;
-  full_name: string;
-  role: 'admin' | 'driver' | 'user';
+  full_name?: string;
+  role: 'admin' | 'driver';
   avatar_url?: string;
   phone_number?: string;
   email?: string;
@@ -52,14 +52,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   
   useEffect(() => {
+    let isMounted = true;
+    
     // First set up the auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, currentSession) => {
-        // console.log("Auth state changed:", event, currentSession?.user?.id);
+        // Only process events if the component is still mounted
+        if (!isMounted) return;
         
-        // Re-fetch session when auth state changes
         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-          dispatch(fetchSession());
+          // Use setTimeout to prevent potential deadlocks with Supabase client
+          setTimeout(() => {
+            if (isMounted) {
+              dispatch(fetchSession());
+            }
+          }, 0);
         }
         else if (event === 'SIGNED_OUT') {
           // Clear local state when signed out
@@ -72,6 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     dispatch(fetchSession());
 
     return () => {
+      isMounted = false;
       subscription.unsubscribe();
     };
   }, [dispatch]);
@@ -116,8 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Only include fields that actually exist in the database schema
       const validUpdates: Record<string, any> = {};
-      if (updates.full_name) validUpdates.full_name = updates.full_name;
-      if (updates.role) validUpdates.role = updates.role;
+      if (updates.full_name) validUpdates.username = updates.full_name;
+      if (updates.role && (updates.role === 'admin' || updates.role === 'driver')) {
+        validUpdates.role = updates.role;
+      }
       if (updates.avatar_url !== undefined) validUpdates.avatar_url = updates.avatar_url;
       if (updates.phone_number !== undefined) validUpdates.phone_number = updates.phone_number;
       if (updates.username !== undefined) validUpdates.username = updates.username;
@@ -147,6 +157,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
   
   const updatePassword = async (password: string) => {
+    if (!password || password.length < 6) {
+      toast({
+        title: 'Error',
+        description: 'Password must be at least 6 characters',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     try {
       const { error } = await supabase.auth.updateUser({ password });
       
@@ -166,11 +185,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signUp = async (email: string, password: string, fullName: string, role: string) => {
-    await dispatch(reduxSignUp({ email, password, fullName, role })).unwrap();
+    try {
+      // Validate inputs
+      if (!email || !password || !fullName) {
+        throw new Error('Email, password, and full name are required');
+      }
+      
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
+      }
+      
+      // Ensure role is valid
+      const validRole = (role === 'admin' || role === 'driver') ? role : 'driver';
+      
+      await dispatch(reduxSignUp({ email, password, fullName, role: validRole })).unwrap();
+    } catch (error: any) {
+      toast({
+        title: 'Sign Up Error',
+        description: error.message || 'Failed to sign up. Please try again.',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to allow component to handle it
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    await dispatch(login({ email, password })).unwrap();
+    try {
+      // Validate inputs
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
+      
+      await dispatch(login({ email, password })).unwrap();
+    } catch (error: any) {
+      toast({
+        title: 'Sign In Error',
+        description: error.message || 'Failed to sign in. Please check your credentials.',
+        variant: 'destructive',
+      });
+      throw error; // Re-throw to allow component to handle it
+    }
   };
 
   const signOut = async () => {
@@ -215,17 +269,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return data.role;
     } catch (error) {
       console.error('Error fetching user role:', error);
-      return null;
-    }
-  };
-
-  // Get the current session (for reference, not used directly in context)
-  const getSession = async (): Promise<Session | null> => {
-    try {
-      const { data } = await supabase.auth.getSession();
-      return data.session;
-    } catch (error) {
-      console.error('Error getting session:', error);
       return null;
     }
   };

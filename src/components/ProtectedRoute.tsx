@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
@@ -7,7 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRole?: 'admin' | 'driver' | 'user' | undefined;
+  allowedRole?: 'admin' | 'driver' | undefined;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
@@ -75,7 +76,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           variant: "destructive"
         });
         
-        // Force navigation to login page
+        // Force navigation to login page with return URL
         navigate('/login', {
           replace: true,
           state: { returnUrl: location.pathname }

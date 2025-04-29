@@ -19,30 +19,56 @@ const initialState: AuthState = {
   error: null,
 };
 
+// Helper function to handle errors
+const handleAuthError = (error: any): string => {
+  if (error?.message) return error.message;
+  if (typeof error === 'string') return error;
+  return 'An unknown authentication error occurred';
+};
+
 // Async thunks
 export const login = createAsyncThunk(
   'auth/login',
   async ({ email, password }: { email: string; password: string }, { rejectWithValue }) => {
     try {
+      // Validate input
+      if (!email || !email.trim()) return rejectWithValue('Email is required');
+      if (!password || !password.trim()) return rejectWithValue('Password is required');
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
+      if (!data.user) throw new Error('User data not found');
 
       // Fetch user profile after successful login
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', data.user?.id)
+        .eq('id', data.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        throw new Error('Could not retrieve user profile');
+      }
 
-      return { user: data.user, profile: profileData as Profile };
+      // Convert database role to type-safe role
+      const role = profileData.role === 'admin' || profileData.role === 'driver'
+        ? profileData.role as 'admin' | 'driver'
+        : 'driver';
+        
+      const profile: Profile = {
+        ...profileData,
+        role,
+        id: profileData.id,
+      };
+
+      return { user: data.user, profile };
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -54,43 +80,56 @@ export const signUp = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
+      // Input validation
+      if (!email || !email.trim()) return rejectWithValue('Email is required');
+      if (!password || password.length < 6) return rejectWithValue('Password must be at least 6 characters');
+      if (!fullName || !fullName.trim()) return rejectWithValue('Full name is required');
+      
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
 
       if (error) throw error;
+      if (!data.user) throw new Error('User registration failed: no user data returned');
 
-      if (data.user) {
-        // Create a profile for the new user with ID matching auth user ID
-        // Convert role string to the Supabase enum type
-        const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
+      // Convert role string to the Supabase enum type
+      const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
         
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: data.user.id,
-          email,
-          phone_number: '',
-          role: safeRole,
-          username: fullName.toLowerCase().replace(/\s+/g, '_'),
-        });
+      // Create a profile for the new user with ID matching auth user ID
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        email,
+        phone_number: '',
+        role: safeRole,
+        username: fullName.toLowerCase().replace(/\s+/g, '_'),
+      });
 
-        if (profileError) throw profileError;
-
-        // Fetch the created profile
-        const { data: profileData, error: fetchError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .single();
-
-        if (fetchError) throw fetchError;
-
-        return { user: data.user, profile: profileData as Profile };
+      if (profileError) {
+        // Clean up auth user if profile creation fails
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error(`Profile creation failed: ${profileError.message}`);
       }
 
-      throw new Error('User registration failed');
+      // Fetch the created profile
+      const { data: profileData, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+
+      if (fetchError) throw new Error(`Could not retrieve created profile: ${fetchError.message}`);
+
+      // Ensure type safety for role
+      const typeSafeProfile: Profile = {
+        ...profileData,
+        role: profileData.role as 'admin' | 'driver',
+        id: profileData.id,
+      };
+
+      return { user: data.user, profile: typeSafeProfile };
     } catch (error: any) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(handleAuthError(error));
     }
   }
 );
@@ -127,7 +166,7 @@ export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValu
   } catch (error: any) {
     // Even on error, ensure state is reset
     dispatch(resetAuthState());
-    return rejectWithValue(error.message);
+    return rejectWithValue(handleAuthError(error));
   } finally {
     // Clear the logging out flag
     sessionStorage.removeItem('logging_out');
@@ -148,14 +187,28 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
         .eq('id', data.session.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Error fetching profile:', profileError);
+        return { user: data.session.user, profile: null };
+      }
 
-      return { user: data.session.user, profile: profileData as Profile };
+      // Ensure type safety for role
+      const role = profileData.role === 'admin' || profileData.role === 'driver'
+        ? profileData.role as 'admin' | 'driver'
+        : 'driver';
+      
+      const profile: Profile = {
+        ...profileData,
+        role,
+        id: profileData.id,
+      };
+
+      return { user: data.session.user, profile };
     }
     
     return { user: null, profile: null };
   } catch (error: any) {
-    return rejectWithValue(error.message);
+    return rejectWithValue(handleAuthError(error));
   }
 });
 

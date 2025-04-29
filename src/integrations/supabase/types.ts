@@ -269,7 +269,7 @@ export type Database = {
     }
     Functions: {
       get_user_role: {
-        Args: { user_id: string }
+        Args: Record<PropertyKey, never> | { user_id: string }
         Returns: string
       }
       update_bus_status: {
