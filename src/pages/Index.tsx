@@ -1,9 +1,11 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BusFront, Cpu, Smartphone, Shield, Clock, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { useCountAnimate } from '@/hooks/useCountAnimate';
 
 // Feature Card Component
 const FeatureCard = ({ 
@@ -24,19 +26,23 @@ const FeatureCard = ({
   </div>
 );
 
-// Stat Card Component
+// Stat Card Component with animated counter
 const StatCard = ({ 
   value, 
   label 
 }: { 
   value: string; 
   label: string;
-}) => (
-  <div className="bg-card dark:bg-card border border-border rounded-lg shadow-md p-6 text-center">
-    <div className="text-3xl font-bold bus-gradient-text mb-2">{value}</div>
-    <div className="text-muted-foreground">{label}</div>
-  </div>
-);
+}) => {
+  const animatedValue = useCountAnimate(value);
+  
+  return (
+    <div className="bg-card dark:bg-card border border-border rounded-lg shadow-md p-6 text-center">
+      <div className="text-3xl font-bold bus-gradient-text mb-2">{animatedValue}</div>
+      <div className="text-muted-foreground">{label}</div>
+    </div>
+  );
+};
 
 const Index = () => {
   const navigate = useNavigate();

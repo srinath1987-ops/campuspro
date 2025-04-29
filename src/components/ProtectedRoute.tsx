@@ -1,5 +1,5 @@
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { fetchSession } from '@/redux/slices/authSlice';
@@ -23,6 +23,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const location = useLocation();
   const [initializing, setInitializing] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
+  const visibilityChangeRef = useRef<boolean>(false);
+  const sessionCheckRef = useRef<boolean>(false);
   
   // Check if we're in a logout process using URL or session storage
   useEffect(() => {
@@ -36,12 +38,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     }
   }, [navigate]);
   
-  // Try to refresh session on mount
+  // Try to refresh session on mount, but only once
   useEffect(() => {
     let isMounted = true;
     
     const checkSession = async () => {
-      if (!user && !loggingOut) {
+      if (!user && !loggingOut && !sessionCheckRef.current) {
+        sessionCheckRef.current = true;
         try {
           await dispatch(fetchSession()).unwrap();
         } catch (err) {
@@ -49,6 +52,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         } finally {
           if (isMounted) {
             setInitializing(false);
+            // Reset the session check flag after some time to allow future checks
+            setTimeout(() => {
+              sessionCheckRef.current = false;
+            }, 10000); // Wait 10 seconds before allowing another check
           }
         }
       } else {
@@ -65,10 +72,31 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     };
   }, [dispatch, user, loggingOut]);
   
+  // Handle visibility change to prevent unnecessary reloads
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        visibilityChangeRef.current = true;
+        
+        // Wait a short delay before allowing redirects again
+        setTimeout(() => {
+          visibilityChangeRef.current = false;
+        }, 1000);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+  
   // Handle authentication notifications and redirects
   useEffect(() => {
     // Only process when we're done loading and not logging out
-    if (!isLoading && !initializing && !loggingOut) {
+    // Also prevent redirects during visibility changes
+    if (!isLoading && !initializing && !loggingOut && !visibilityChangeRef.current) {
       if (!user) {
         toast({
           title: "Authentication required",
@@ -98,7 +126,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     }
-  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate]);
+  }, [isLoading, initializing, loggingOut, user, toast, allowedRole, profile, location.pathname, navigate, visibilityChangeRef.current]);
 
   // If we're logging out, don't show loading indicator
   if (loggingOut) {

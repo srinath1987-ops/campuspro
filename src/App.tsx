@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -29,11 +30,15 @@ import DriverSettings from "./pages/driver/Settings";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
+// Create a query client with optimized settings for tab switching
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
       refetchOnWindowFocus: false, // Prevent refetching when window regains focus
+      staleTime: 30000, // Data is fresh for 30 seconds
+      refetchInterval: 60000, // Only refetch every minute
+      refetchIntervalInBackground: false, // Don't refetch in background
     },
   },
 });
@@ -45,6 +50,15 @@ const AppContent = () => {
   const location = useLocation();
   const [appInitialized, setAppInitialized] = useState(false);
   const sessionCheckIntervalRef = useRef<number | null>(null);
+  const visibilityChangeRef = useRef<boolean>(false);
+  const wasLoggedIn = useRef<boolean>(false);
+
+  // Save the user login state for comparison after visibility change
+  useEffect(() => {
+    if (user) {
+      wasLoggedIn.current = true;
+    }
+  }, [user]);
 
   // Initialize auth session on app start
   useEffect(() => {
@@ -60,15 +74,14 @@ const AppContent = () => {
     
     initializeApp();
     
-    // Set up periodic session check to prevent disconnections, but don't reload the app
+    // Set up periodic session check that only runs when the document is visible
+    // but use long interval to prevent unnecessary reloads
     sessionCheckIntervalRef.current = window.setInterval(() => {
-      // Only check session if the document is visible to prevent unnecessary reloads
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === 'visible' && !visibilityChangeRef.current) {
         dispatch(fetchSession());
       }
     }, 5 * 60 * 1000); // Check every 5 minutes
     
-    // Clean up interval on component unmount
     return () => {
       if (sessionCheckIntervalRef.current) {
         clearInterval(sessionCheckIntervalRef.current);
@@ -76,14 +89,29 @@ const AppContent = () => {
     };
   }, [dispatch]);
 
-  // Handle visibility change events
+  // Handle visibility change events without triggering reloads
   useEffect(() => {
     const handleVisibilityChange = () => {
-      // Don't do anything that would trigger a reload when tab becomes visible again
-      // Just make sure session is still valid if needed
-      if (document.visibilityState === 'visible' && user) {
-        // Check session but don't force reload
-        dispatch(fetchSession());
+      // When page becomes visible again
+      if (document.visibilityState === 'visible') {
+        visibilityChangeRef.current = true;
+        
+        // Only check the session if the user was previously logged in
+        // and don't force any reloads/redirects unless absolutely necessary
+        if (wasLoggedIn.current) {
+          // We'll do a silent session check without forcing a reload
+          dispatch(fetchSession())
+            .then(() => {
+              setTimeout(() => {
+                visibilityChangeRef.current = false;
+              }, 1000);
+            })
+            .catch(() => {
+              visibilityChangeRef.current = false;
+            });
+        } else {
+          visibilityChangeRef.current = false;
+        }
       }
     };
 
@@ -92,7 +120,7 @@ const AppContent = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [dispatch, user]);
+  }, [dispatch]);
 
   // Redirect to login page if session is lost, except for public routes
   useEffect(() => {
@@ -101,7 +129,12 @@ const AppContent = () => {
     const publicRoutes = ['/', '/about', '/features', '/bus-points', '/feedback', '/login', '/signup'];
     const isPublicRoute = publicRoutes.some(route => location.pathname === route);
     
-    if (!isLoading && !user && !isPublicRoute) {
+    // Only redirect if:
+    // 1. We're not in a loading state
+    // 2. User is not logged in
+    // 3. We're not on a public route
+    // 4. We're not in a visibility change state (prevents reload on tab switch)
+    if (!isLoading && !user && !isPublicRoute && !visibilityChangeRef.current) {
       navigate('/login', { replace: true });
     }
   }, [user, isLoading, navigate, location.pathname, appInitialized]);
