@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -214,6 +215,8 @@ const App = () => {
   
   return (
     <BrowserRouter>
+      {/* Fix provider ordering - React Redux Provider should be outside all other providers */}
+      {/* ThemeProvider should be before AuthProvider and QueryClientProvider */}
       <ThemeProvider defaultTheme="dark" storageKey="campus-pro-theme">
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
