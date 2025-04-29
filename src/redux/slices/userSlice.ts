@@ -1,3 +1,4 @@
+
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -6,7 +7,7 @@ export interface User {
   id: string;
   email: string;
   full_name: string;
-  role: 'admin' | 'driver' | 'user';
+  role: 'admin' | 'driver'; // Removing 'user' as it's not allowed by database enum
   avatar_url?: string;
   phone_number?: string;
   created_at: string;
@@ -35,16 +36,15 @@ export const fetchUsers = createAsyncThunk(
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, auth_users(email)')
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if (error) throw error;
 
-      // Format data to include email from auth_users join
+      // Format data to match our User interface without relying on auth_users join
       const formattedData = (data || []).map((user) => ({
         id: user.id,
-        email: user.auth_users?.email || '',
-        full_name: user.full_name,
+        email: user.email || '',
+        full_name: user.username || '', // Use username as full_name
         role: user.role,
         avatar_url: user.avatar_url,
         phone_number: user.phone_number,
@@ -64,17 +64,17 @@ export const fetchDrivers = createAsyncThunk(
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, auth_users(email)')
+        .select('*')
         .eq('role', 'driver')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Format data to include email from auth_users join
+      // Format data to match our User interface without relying on auth_users join
       const formattedData = (data || []).map((user) => ({
         id: user.id,
-        email: user.auth_users?.email || '',
-        full_name: user.full_name,
+        email: user.email || '',
+        full_name: user.username || '', // Use username as full_name
         role: user.role,
         avatar_url: user.avatar_url,
         phone_number: user.phone_number,
@@ -92,24 +92,28 @@ export const updateUser = createAsyncThunk(
   'users/updateUser',
   async ({ id, userData }: { id: string; userData: Partial<User> }, { rejectWithValue }) => {
     try {
+      // Make sure we only send valid fields to Supabase
+      const validUpdateData = {
+        username: userData.full_name, // Map full_name to username
+        phone_number: userData.phone_number,
+        avatar_url: userData.avatar_url,
+        role: userData.role,
+      };
+
       const { data, error } = await supabase
         .from('profiles')
-        .update({
-          full_name: userData.full_name,
-          phone_number: userData.phone_number,
-          avatar_url: userData.avatar_url,
-          role: userData.role,
-        })
+        .update(validUpdateData)
         .eq('id', id)
-        .select('*, auth_users(email)')
+        .select('*')
         .single();
 
       if (error) throw error;
 
+      // Format response to match our User interface
       return {
         id: data.id,
-        email: data.auth_users?.email || '',
-        full_name: data.full_name,
+        email: data.email || '',
+        full_name: data.username || '', // Use username as full_name
         role: data.role,
         avatar_url: data.avatar_url,
         phone_number: data.phone_number,
@@ -240,4 +244,4 @@ const userSlice = createSlice({
 });
 
 export const { setSelectedUser, clearUserError } = userSlice.actions;
-export default userSlice.reducer; 
+export default userSlice.reducer;

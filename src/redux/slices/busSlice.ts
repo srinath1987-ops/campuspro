@@ -1,4 +1,3 @@
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -15,7 +14,7 @@ export interface Bus {
   out_time?: string | null;
   start_point: string;
   last_updated: string;
-  created_at?: string; // Optional since it might not be returned by Supabase
+  created_at: string; // Required now, not optional
   student_count?: number; // Optional since it's added dynamically
 }
 
@@ -197,7 +196,7 @@ export const updateBus = createAsyncThunk(
       return {
         ...data,
         id: data.rfid_id, // Use RFID as ID for consistency
-        created_at: data.created_at || new Date().toISOString(),
+        created_at: new Date().toISOString(), // Ensure created_at field is present
       } as Bus;
     } catch (error: any) {
       return rejectWithValue(error.message);

@@ -178,7 +178,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(login.fulfilled, (state, action: PayloadAction<{user: User, profile: Profile}>) => {
+    builder.addCase(login.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -193,7 +193,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(signUp.fulfilled, (state, action: PayloadAction<{user: User, profile: Profile}>) => {
+    builder.addCase(signUp.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
@@ -222,7 +222,7 @@ const authSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     });
-    builder.addCase(fetchSession.fulfilled, (state, action: PayloadAction<{user: User | null, profile: Profile | null}>) => {
+    builder.addCase(fetchSession.fulfilled, (state, action) => {
       state.isLoading = false;
       state.user = action.payload.user;
       state.profile = action.payload.profile;
