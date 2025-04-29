@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight, MessageCircle } from 'lucide-react';
@@ -43,12 +44,12 @@ const NavItem = ({
         variant="ghost" 
         className={cn(
           isMobile ? "w-full justify-start" : "rounded-full gap-2",
-          isActive && "bg-primary/10 text-primary dark:bg-primary/20",
-          "text-foreground hover:text-primary",
+          isActive && "bg-yellow-400/10 text-yellow-400 dark:bg-yellow-400/20",
+          "text-gray-300 hover:text-yellow-400",
           className
         )}
       >
-        <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
+        <Icon className={cn("h-4 w-4", isActive && "text-yellow-400")} />
         <span>{children}</span>
       </Button>
     </Link>
@@ -82,11 +83,11 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 dark:border-gray-800">
+    <nav className="sticky top-0 z-40 w-full border-b border-gray-800 bg-black/95 backdrop-blur supports-[backdrop-filter]:bg-black/60">
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <BusFront className="h-5 w-5 text-primary" />
-          <span className="text-lg font-bold text-foreground">CampusPro</span>
+          <BusFront className="h-5 w-5 text-yellow-400" />
+          <span className="text-lg font-bold text-white">CampusPro</span>
         </Link>
         
         <div className="hidden md:flex items-center gap-1">
@@ -102,29 +103,32 @@ const Navbar = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="rounded-full ml-2">
-                    <User className="h-4 w-4 mr-2" />
+                  <Button variant="outline" className="rounded-full ml-2 border-gray-700 bg-gray-900">
+                    <User className="h-4 w-4 mr-2 text-yellow-400" />
                     {profile?.full_name || (profile as any)?.username || 'Account'}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="bg-background dark:bg-background">
-                  <DropdownMenuLabel className="text-foreground">My Account</DropdownMenuLabel>
-                  <DropdownMenuItem disabled className="text-muted-foreground">
+                <DropdownMenuContent align="end" className="bg-gray-900 border-gray-700">
+                  <DropdownMenuLabel className="text-white">My Account</DropdownMenuLabel>
+                  <DropdownMenuItem disabled className="text-gray-400">
                     {profile?.role === 'admin' ? 'Admin' : 'Driver'}
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <Link to={`/${profile?.role}/profile`} className="w-full">
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white">
+                    <Link to={`/${profile?.role}/profile`} className="w-full text-gray-300">
                       Profile
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link to={`/${profile?.role}/settings`} className="w-full">
+                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white">
+                    <Link to={`/${profile?.role}/settings`} className="w-full text-gray-300">
                       Settings
                     </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-500">
+                  <DropdownMenuSeparator className="bg-gray-700" />
+                  <DropdownMenuItem 
+                    onClick={handleLogout} 
+                    className="text-red-400 focus:bg-red-900/30 focus:text-red-300"
+                  >
                     <LogOut className="h-4 w-4 mr-2" /> Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -132,26 +136,24 @@ const Navbar = () => {
             </>
           ) : (
             <>
-              <NavItem to="/login" icon={LogIn} className="bg-primary text-primary-foreground hover:bg-primary/90">
+              <NavItem to="/login" icon={LogIn} className="bg-yellow-400 text-black hover:bg-yellow-500 hover:text-black">
                 Login
               </NavItem>
-              <NavItem to="/signup" icon={User} className="ml-1">
+              <NavItem to="/signup" icon={User} className="border border-yellow-500/30 text-yellow-400 hover:bg-yellow-400/10 ml-1">
                 Sign Up
               </NavItem>
             </>
           )}
-          
-          
         </div>
         
         {/* Mobile Menu Button */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
-            <Button variant="outline" size="icon" className="md:hidden">
-              <Menu className="h-5 w-5" />
+            <Button variant="outline" size="icon" className="md:hidden border-gray-700 bg-gray-900">
+              <Menu className="h-5 w-5 text-gray-300" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="md:hidden w-[250px] sm:w-[300px] bg-background dark:bg-background">
+          <SheetContent side="right" className="md:hidden w-[250px] sm:w-[300px] bg-gray-900 border-l border-gray-800">
             <div className="flex flex-col gap-4 py-4">
               <NavItem to="/" icon={BusFront} isMobile onClick={() => setMobileMenuOpen(false)}>Home</NavItem>
               <NavItem to="/about" icon={Info} isMobile onClick={() => setMobileMenuOpen(false)}>About</NavItem>
@@ -162,8 +164,8 @@ const Navbar = () => {
               {user ? (
                 <>
                   <NavItem to={getDashboardLink()} icon={Layers} isMobile onClick={() => setMobileMenuOpen(false)}>Dashboard</NavItem>
-                  <div className="border-t border-border my-2 pt-2">
-                    <p className="px-4 py-2 text-sm font-medium text-muted-foreground">
+                  <div className="border-t border-gray-800 my-2 pt-2">
+                    <p className="px-4 py-2 text-sm font-medium text-gray-400">
                       Signed in as: {profile?.full_name || (profile as any)?.username || 'User'}
                     </p>
                     <NavItem 
@@ -184,7 +186,7 @@ const Navbar = () => {
                     </NavItem>
                     <Button 
                       variant="ghost" 
-                      className="w-full justify-start text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
+                      className="w-full justify-start text-red-400 hover:text-red-300 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-950/30"
                       onClick={() => {
                         handleLogout();
                         setMobileMenuOpen(false);
@@ -196,9 +198,28 @@ const Navbar = () => {
                   </div>
                 </>
               ) : (
-                <div className="border-t border-border my-2 pt-2">
-                  <NavItem to="/login" icon={LogIn} isMobile onClick={() => setMobileMenuOpen(false)}>Login</NavItem>
-                  <NavItem to="/signup" icon={User} isMobile onClick={() => setMobileMenuOpen(false)}>Sign Up</NavItem>
+                <div className="border-t border-gray-800 my-2 pt-2">
+                  <Button
+                    className="w-full mb-2 bg-yellow-400 hover:bg-yellow-500 text-black"
+                    onClick={() => {
+                      navigate('/login');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <LogIn className="h-4 w-4 mr-2" />
+                    <span>Login</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full border-yellow-500/30 text-yellow-400 hover:bg-yellow-400/10"
+                    onClick={() => {
+                      navigate('/signup');
+                      setMobileMenuOpen(false);
+                    }}
+                  >
+                    <User className="h-4 w-4 mr-2" />
+                    <span>Sign Up</span>
+                  </Button>
                 </div>
               )}
             </div>

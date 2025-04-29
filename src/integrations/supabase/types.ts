@@ -13,8 +13,8 @@ export type Database = {
         Row: {
           bus_capacity: number
           bus_number: string
-          driver_name: string
-          driver_phone: string
+          driver_name: string | null
+          driver_phone: string | null
           in_campus: boolean
           in_time: string | null
           last_updated: string
@@ -25,8 +25,8 @@ export type Database = {
         Insert: {
           bus_capacity: number
           bus_number: string
-          driver_name: string
-          driver_phone: string
+          driver_name?: string | null
+          driver_phone?: string | null
           in_campus?: boolean
           in_time?: string | null
           last_updated?: string
@@ -37,8 +37,8 @@ export type Database = {
         Update: {
           bus_capacity?: number
           bus_number?: string
-          driver_name?: string
-          driver_phone?: string
+          driver_name?: string | null
+          driver_phone?: string | null
           in_campus?: boolean
           in_time?: string | null
           last_updated?: string

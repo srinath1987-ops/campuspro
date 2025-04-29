@@ -23,11 +23,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from '@/contexts/AuthContext';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 
-// Define the sign-up form schema with default values for driver_name
+// Define the sign-up form schema
 const signUpSchema = z.object({
   username: z.string().min(3, {
     message: "Username must be at least 3 characters.",
@@ -54,6 +55,7 @@ const SignUp = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
 
   const form = useForm<SignUpValues>({
     resolver: zodResolver(signUpSchema),
@@ -118,29 +120,39 @@ const SignUp = () => {
       );
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
+      toast({
+        title: "Account created successfully!",
+        description: "You can now log in with your credentials.",
+        variant: "success",
+      });
       navigate('/login');
     } catch (error) {
       console.error('Signup error:', error);
+      toast({
+        title: "Failed to sign up",
+        description: "Please check your information and try again.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex flex-col min-h-screen bg-black text-white">
       <Navbar />
       
-      <main className="flex-1 bus-hero-pattern flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <Card className="shadow-lg">
+          <Card className="shadow-lg border-yellow-500/20 bg-black text-white">
             <CardHeader className="space-y-1">
               <div className="flex justify-center mb-2">
-                <div className="p-2 bus-gradient-bg rounded-full">
-                  <BusFront className="h-6 w-6 text-white" />
+                <div className="p-2 rounded-full bg-yellow-400">
+                  <BusFront className="h-6 w-6 text-black" />
                 </div>
               </div>
               <CardTitle className="text-2xl text-center">Sign Up</CardTitle>
-              <CardDescription className="text-center">
+              <CardDescription className="text-center text-gray-400">
                 Create an account to access the bus tracking system
               </CardDescription>
             </CardHeader>
@@ -152,11 +164,11 @@ const SignUp = () => {
                     name="username"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Username</FormLabel>
+                        <FormLabel className="text-gray-300">Username</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your username" {...field} />
+                          <Input placeholder="Enter your username" {...field} className="bg-gray-900 border-gray-700" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -165,11 +177,11 @@ const SignUp = () => {
                     name="email"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Email</FormLabel>
+                        <FormLabel className="text-gray-300">Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your email" type="email" {...field} />
+                          <Input placeholder="Enter your email" type="email" {...field} className="bg-gray-900 border-gray-700" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -178,11 +190,11 @@ const SignUp = () => {
                     name="password"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Password</FormLabel>
+                        <FormLabel className="text-gray-300">Password</FormLabel>
                         <FormControl>
-                          <Input placeholder="Create a password" type="password" {...field} />
+                          <Input placeholder="Create a password" type="password" {...field} className="bg-gray-900 border-gray-700" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -191,11 +203,11 @@ const SignUp = () => {
                     name="phone"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Phone Number</FormLabel>
+                        <FormLabel className="text-gray-300">Phone Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter your phone number" {...field} />
+                          <Input placeholder="Enter your phone number" {...field} className="bg-gray-900 border-gray-700" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
@@ -204,23 +216,23 @@ const SignUp = () => {
                     name="bus_number"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Bus Number</FormLabel>
+                        <FormLabel className="text-gray-300">Bus Number</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter assigned bus number" {...field} />
+                          <Input placeholder="Enter assigned bus number" {...field} className="bg-gray-900 border-gray-700" />
                         </FormControl>
-                        <FormMessage />
+                        <FormMessage className="text-red-400" />
                       </FormItem>
                     )}
                   />
                   
                   <Button 
                     type="submit" 
-                    className="w-full bus-gradient-bg hover:opacity-90" 
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold" 
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center">
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -228,7 +240,7 @@ const SignUp = () => {
                       </span>
                     ) : (
                       <span className="flex items-center justify-center">
-                        <UserPlus className="mr-2 h-4 w-4" /> Create Account
+                        <UserPlus className="mr-2 h-4 w-4" /> Sign up
                       </span>
                     )}
                   </Button>
@@ -236,9 +248,9 @@ const SignUp = () => {
               </Form>
             </CardContent>
             <CardFooter className="flex justify-center">
-              <div className="text-sm text-center">
+              <div className="text-sm text-center text-gray-400">
                 Already have an account?{" "}
-                <Link to="/login" className="text-primary font-semibold hover:underline">
+                <Link to="/login" className="text-yellow-400 font-semibold hover:underline">
                   Login
                 </Link>
               </div>
