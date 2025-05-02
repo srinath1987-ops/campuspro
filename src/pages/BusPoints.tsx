@@ -44,21 +44,21 @@ type Bus = {
 // Helper function to safely parse JSON data
 const safeParseStops = (stops: Json): { time: string; location: string }[] => {
   if (!stops) return [];
-  
+
   try {
     // If it's already an array, return it
     if (Array.isArray(stops)) {
       return stops.map(stop => {
         if (typeof stop === 'object' && stop !== null && 'time' in stop && 'location' in stop) {
-          return { 
-            time: String(stop.time || ''), 
-            location: String(stop.location || '') 
+          return {
+            time: String(stop.time || ''),
+            location: String(stop.location || '')
           };
         }
         return { time: '', location: '' };
       }).filter(stop => stop.location || stop.time); // Filter out empty stops
     }
-    
+
     // If it's a string, try to parse it
     if (typeof stops === 'string') {
       try {
@@ -72,22 +72,22 @@ const safeParseStops = (stops: Json): { time: string; location: string }[] => {
         return [];
       }
     }
-    
+
     // If it's an object, try to convert it to array
     if (typeof stops === 'object' && stops !== null) {
       // Handle case where it might be an object with numeric keys
       if (Object.keys(stops).every(key => !isNaN(Number(key)))) {
         return Object.values(stops).map(stop => {
           if (typeof stop === 'object' && stop !== null && 'time' in stop && 'location' in stop) {
-            return { 
-              time: String(stop.time || ''), 
-              location: String(stop.location || '') 
+            return {
+              time: String(stop.time || ''),
+              location: String(stop.location || '')
             };
           }
           return { time: '', location: '' };
         }).filter(stop => stop.location || stop.time);
       }
-      
+
       // Handle case of a single stop object
       if ('time' in stops && 'location' in stops) {
         const time = String(stops.time || '');
@@ -97,7 +97,7 @@ const safeParseStops = (stops: Json): { time: string; location: string }[] => {
         }
       }
     }
-    
+
     // console.log("Unknown stops format:", stops);
     return [];
   } catch (error) {
@@ -261,7 +261,7 @@ const BusPoints = () => {
 
         // Process routes - ensuring we keep ALL routes even if some fields are null
         const processedRoutes: BusRoute[] = [];
-        
+
         if (routesData && routesData.length > 0) {
           routesData.forEach((route, index) => {
             // Only skip records where route_no is completely missing
@@ -276,9 +276,9 @@ const BusPoints = () => {
             }
           });
         }
-        
+
         // console.log('Processed routes:', processedRoutes);
-        
+
         // Always ensure we have some routes to display
         if (processedRoutes.length === 0) {
           console.warn('No routes found in data, using fallback data');
@@ -286,7 +286,7 @@ const BusPoints = () => {
         } else {
           setRoutes(processedRoutes);
         }
-        
+
         // Create bus entries for each route with a bus number
         const busesMap: Record<string, Bus> = {};
         processedRoutes.forEach(route => {
@@ -298,7 +298,7 @@ const BusPoints = () => {
             };
           }
         });
-        
+
         if (Object.keys(busesMap).length === 0) {
           setBuses(getFallbackBuses());
         } else {
@@ -374,7 +374,7 @@ const BusPoints = () => {
   };
 
   // Filter routes based on search query
-  const filteredRoutes = routes.filter(route => 
+  const filteredRoutes = routes.filter(route =>
     route.route_no.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (route.bus_number && route.bus_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
     route.stops.some(stop => stop.location.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -388,13 +388,13 @@ const BusPoints = () => {
       setRoutes(getFallbackRoutes());
     }
   }, [isLoading, routes.length]);
-  
+
   // If we have routes but no buses, create empty bus entries to ensure data appears
   useEffect(() => {
     if (!isLoading && routes.length > 0 && Object.keys(buses).length === 0) {
       console.warn('Routes found but no buses, creating placeholder bus entries');
       const placeholderBuses: Record<string, Bus> = {};
-      
+
       // Create placeholder entries for all bus_numbers in routes
       routes.forEach(route => {
         if (route.bus_number && !placeholderBuses[route.bus_number]) {
@@ -405,7 +405,7 @@ const BusPoints = () => {
           };
         }
       });
-      
+
       if (Object.keys(placeholderBuses).length > 0) {
         setBuses(prev => ({...prev, ...placeholderBuses}));
       } else {
@@ -421,7 +421,7 @@ const BusPoints = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
+
       <main className="flex-1 bus-pattern-light py-16 bg-background dark:bg-background">
         <div className="container px-4 mx-auto">
           <div className="text-center mb-12">
@@ -430,7 +430,7 @@ const BusPoints = () => {
               Find all campus bus routes, timings, and stop locations to plan your commute efficiently.
             </p>
           </div>
-          
+
           <Card className="max-w-5xl mx-auto shadow-lg mb-10 border border-border">
             <CardHeader>
               <CardTitle className="flex items-center text-foreground">
@@ -492,21 +492,21 @@ const BusPoints = () => {
                             {route.bus_number || 'N/A'}
                           </TableCell>
                           <TableCell>
-                            {route.stops && route.stops.length > 0 && route.stops[0]?.location 
-                              ? route.stops[0].location 
+                            {route.stops && route.stops.length > 0 && route.stops[0]?.location
+                              ? route.stops[0].location
                               : 'N/A'}
                           </TableCell>
                           <TableCell>
                             {route.via || 'Direct route'}
                           </TableCell>
                           <TableCell>
-                            {route.stops && route.stops.length > 0 
-                              ? `${route.stops.length} stops` 
+                            {route.stops && route.stops.length > 0
+                              ? `${route.stops.length} stops`
                               : '0 stops'}
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => openRouteDetails(route)}
                             >
@@ -532,7 +532,7 @@ const BusPoints = () => {
 
       {/* Route Details Dialog */}
       <Dialog open={!!selectedRoute} onOpenChange={(open) => !open && setSelectedRoute(null)}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-hide">
           {selectedRoute && (
             <>
               <DialogHeader>
@@ -541,7 +541,7 @@ const BusPoints = () => {
                   Route {selectedRoute.route_no} Details
                 </DialogTitle>
                 <DialogDescription>
-                  {selectedRoute.bus_number ? `Bus ${selectedRoute.bus_number}` : 'No bus assigned'} 
+                  {selectedRoute.bus_number ? `Bus ${selectedRoute.bus_number}` : 'No bus assigned'}
                   {selectedRoute.via ? ` via ${selectedRoute.via}` : ''}
                 </DialogDescription>
               </DialogHeader>
@@ -583,7 +583,7 @@ const BusPoints = () => {
                       Schedule Information
                     </h3>
                     <div className="space-y-2">
-                      {selectedRoute.stops && selectedRoute.stops.length > 0 && 
+                      {selectedRoute.stops && selectedRoute.stops.length > 0 &&
                        selectedRoute.stops[0]?.time && selectedRoute.stops[0]?.location && (
                         <div className="flex flex-col">
                           <span className="text-sm text-muted-foreground">First Pickup</span>
@@ -592,10 +592,10 @@ const BusPoints = () => {
                           </span>
                         </div>
                       )}
-                      
-                      {selectedRoute.stops && selectedRoute.stops.length > 0 && 
-                       selectedRoute.stops[selectedRoute.stops.length - 1]?.time && 
-                       selectedRoute.stops[selectedRoute.stops.length - 1]?.location && 
+
+                      {selectedRoute.stops && selectedRoute.stops.length > 0 &&
+                       selectedRoute.stops[selectedRoute.stops.length - 1]?.time &&
+                       selectedRoute.stops[selectedRoute.stops.length - 1]?.location &&
                        selectedRoute.stops[selectedRoute.stops.length - 1]?.location !== "College" && (
                         <div className="flex flex-col">
                           <span className="text-sm text-muted-foreground">Last Stop Before Campus</span>
@@ -604,7 +604,7 @@ const BusPoints = () => {
                           </span>
                         </div>
                       )}
-                      
+
                       <div className="flex flex-col">
                         <span className="text-sm text-muted-foreground">Campus Arrival</span>
                         <span className="font-medium text-foreground">7:50 AM (Approx.)</span>
@@ -644,7 +644,7 @@ const BusPoints = () => {
                       ) : (
                         <div className="text-muted-foreground pl-8">No stop points available</div>
                       )}
-                      
+
                       {/* Always show the campus arrival */}
                       <div className="relative pl-8">
                         <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-green-500 rounded-full"></div>
@@ -661,7 +661,7 @@ const BusPoints = () => {
           )}
         </DialogContent>
       </Dialog>
-      
+
       <Footer />
     </div>
   );
