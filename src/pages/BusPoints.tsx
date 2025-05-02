@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Search, BusFront, Clock, Route as RouteIcon } from 'lucide-react';
+import { MapPin, Search, BusFront, Clock, Route as RouteIcon, Map as MapIcon } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -25,6 +25,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
+import { Timeline } from "@/components/ui/timeline";
+import MapboxMap from '@/components/MapboxMap';
 
 // Define the BusRoute type
 type BusRoute = {
@@ -622,37 +624,47 @@ const BusPoints = () => {
                     <MapPin className="mr-2 h-4 w-4 text-primary" />
                     Stop Points
                   </h3>
-                  <div className="relative">
-                    {(selectedRoute.stops && selectedRoute.stops.length > 0) && (
-                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                    )}
-                    <div className="space-y-3">
-                      {selectedRoute.stops && selectedRoute.stops.length > 0 ? (
-                        selectedRoute.stops.map((stop, idx) => (
-                          <div key={idx} className="relative pl-8">
-                            <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-primary rounded-full"></div>
-                            <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
-                              {stop.location && (
-                                <div className="font-medium text-foreground">{stop.location}</div>
-                              )}
-                              {stop.time && (
-                                <div className="text-muted-foreground text-sm">{stop.time}</div>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <div className="text-muted-foreground pl-8">No stop points available</div>
-                      )}
 
-                      {/* Always show the campus arrival */}
-                      <div className="relative pl-8">
-                        <div className="absolute left-2 top-2 w-4 h-4 -translate-x-1/2 bg-green-500 rounded-full"></div>
-                        <div className="bg-card dark:bg-card p-2 rounded-lg border border-border shadow-sm">
-                          <div className="font-medium text-foreground">Campus (Arrival)</div>
-                          <div className="text-muted-foreground text-sm">7:50 AM (Approx.)</div>
-                        </div>
-                      </div>
+                  <div className="mt-4">
+                    {selectedRoute.stops && selectedRoute.stops.length > 0 ? (
+                      <Timeline
+                        data={[
+                          ...selectedRoute.stops.map(stop => ({
+                            title: stop.location,
+                            subtitle: stop.time,
+                            content: null
+                          })),
+                          {
+                            title: "Campus (Arrival)",
+                            subtitle: "7:50 AM (Approx.)",
+                            content: null
+                          }
+                        ]}
+                      />
+                    ) : (
+                      <div className="text-muted-foreground pl-8">No stop points available</div>
+                    )}
+                  </div>
+
+                  {/* Map Section */}
+                  <div className="mt-8">
+                    <h3 className="font-semibold mb-3 flex items-center text-foreground">
+                      <MapIcon className="mr-2 h-4 w-4 text-primary" />
+                      Route Map
+                    </h3>
+
+                    <div className="mt-4">
+                      {selectedRoute.stops && selectedRoute.stops.length > 0 ? (
+                        <MapboxMap
+                          stops={[
+                            ...selectedRoute.stops,
+                            { location: "Campus (Arrival)", time: "7:50 AM (Approx.)" }
+                          ]}
+                          routeNumber={selectedRoute.route_no}
+                        />
+                      ) : (
+                        <div className="text-muted-foreground pl-8">No map data available</div>
+                      )}
                     </div>
                   </div>
                 </div>
