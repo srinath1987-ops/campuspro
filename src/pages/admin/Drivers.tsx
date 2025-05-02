@@ -73,7 +73,7 @@ const Drivers = () => {
   }, [toast]);
 
   // Filter drivers based on search query
-  const filteredDrivers = drivers.filter(driver => 
+  const filteredDrivers = drivers.filter(driver =>
     driver.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
     driver.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (driver.bus_number && driver.bus_number.toLowerCase().includes(searchQuery.toLowerCase())) ||
@@ -140,9 +140,11 @@ const Drivers = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredDrivers.map((driver) => (
-                      <React.Fragment key={driver.id}>
-                        <TableRow>
+                    {filteredDrivers.map((driver) => {
+                      // Use a keyed array instead of React.Fragment
+                      return [
+                        // First row with driver info
+                        <TableRow key={`row-${driver.id}`}>
                           <TableCell className="font-medium">{driver.username}</TableCell>
                           <TableCell>{driver.email}</TableCell>
                           <TableCell>{driver.phone_number}</TableCell>
@@ -164,9 +166,11 @@ const Drivers = () => {
                               {expandedDriver === driver.id ? "Hide Details" : "View Details"}
                             </Button>
                           </TableCell>
-                        </TableRow>
-                        {expandedDriver === driver.id && (
-                          <TableRow>
+                        </TableRow>,
+
+                        // Expanded details row (only rendered when expanded)
+                        expandedDriver === driver.id && (
+                          <TableRow key={`details-${driver.id}`}>
                             <TableCell colSpan={5} className="p-0">
                               <div className="bg-muted/50 p-4 rounded-lg m-2">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -195,7 +199,7 @@ const Drivers = () => {
                                       </div>
                                     </div>
                                   </div>
-                                  
+
                                   <div>
                                     <h4 className="font-semibold mb-2">Additional Information</h4>
                                     <div className="space-y-2">
@@ -221,9 +225,9 @@ const Drivers = () => {
                               </div>
                             </TableCell>
                           </TableRow>
-                        )}
-                      </React.Fragment>
-                    ))}
+                        )
+                      ].filter(Boolean); // Filter out false values (when not expanded)
+                    })}
                   </TableBody>
                 </Table>
               </div>
