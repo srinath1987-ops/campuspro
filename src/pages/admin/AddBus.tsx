@@ -192,7 +192,7 @@ const AddBus = () => {
   const onSubmit = async (values: BusFormValues) => {
     setIsSubmitting(true);
     try {
-      console.log("Submitting bus form:", values);
+      // console.log("Submitting bus form:", values);
       
       // Ensure driver_name is not null or empty
       const driverName = values.driver_name?.trim() || "Unknown Driver";

@@ -48,7 +48,7 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
-  
+
   // Redux state
   const dispatch = useAppDispatch();
   const { user, profile, isLoading, error } = useAppSelector(state => state.auth);
@@ -61,29 +61,39 @@ const Login = () => {
     },
   });
 
+  // Check for clean logout flag
+  useEffect(() => {
+    // Check if we came from a clean logout
+    const cleanLogoutCompleted = localStorage.getItem('clean_logout_completed');
+    if (cleanLogoutCompleted === 'true') {
+      // Clear the flag to prevent loops
+      localStorage.removeItem('clean_logout_completed');
+    }
+  }, []);
+
   // Effect to redirect authenticated users
   useEffect(() => {
     if (user && profile) {
       // Try to get return URL from location state first (more reliable)
       const returnUrl = location.state?.returnUrl;
-      
+
       // Then fall back to query params
       const params = new URLSearchParams(location.search);
       const redirectPath = returnUrl || params.get('redirect');
-      
+
       if (redirectPath) {
         // Check if the redirect URL is appropriate for the user role
         const isAdminRoute = redirectPath.startsWith('/admin');
         const isDriverRoute = redirectPath.startsWith('/driver');
-        
-        if ((isAdminRoute && profile.role === 'admin') || 
+
+        if ((isAdminRoute && profile.role === 'admin') ||
             (isDriverRoute && profile.role === 'driver') ||
             (!isAdminRoute && !isDriverRoute)) {
           navigate(redirectPath, { replace: true });
           return;
         }
       }
-      
+
       // If no redirect URL or inappropriate role, use default redirection
       redirectBasedOnRole(profile.role);
     }
@@ -116,7 +126,7 @@ const Login = () => {
   //   try {
   //     // Check if admin user already exists
   //     const adminExists = await checkUserExists('admin03.snuc@gmail.com');
-      
+
   //     if (adminExists) {
   //       toast({
   //         title: "Demo Data Already Exists",
@@ -124,10 +134,10 @@ const Login = () => {
   //       });
   //       return;
   //     }
-      
+
   //     // Setup demo data
   //     const result = await setupDemoData();
-      
+
   //     if (result.success) {
   //       toast({
   //         title: "Demo Setup Successful",
@@ -155,7 +165,7 @@ const Login = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
+
       <main className="flex-1 bus-hero-pattern flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Card className="shadow-lg">
@@ -199,15 +209,15 @@ const Login = () => {
                       </FormItem>
                     )}
                   />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bus-gradient-bg hover:opacity-90" 
+
+                  <Button
+                    type="submit"
+                    className="w-full bus-gradient-bg hover:opacity-90"
                     disabled={isLoading}
                   >
                     {isLoading ? (
                       <span className="flex items-center justify-center">
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" /> 
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         Signing In...
                       </span>
                     ) : (
@@ -218,7 +228,7 @@ const Login = () => {
                   </Button>
                 </form>
               </Form>
-              
+
               {/* Display error from Redux state */}
               {error && (
                 <div className="text-sm text-red-500 font-medium p-3 bg-red-50 border border-red-200 rounded">
@@ -237,9 +247,9 @@ const Login = () => {
                 <div className="mb-2">
                   For demo purposes:
                 </div>
-                <Button 
-                  onClick={handleSetupDemo} 
-                  variant="outline" 
+                <Button
+                  onClick={handleSetupDemo}
+                  variant="outline"
                   className="mb-3 w-full"
                   disabled={isSettingUpDemo}
                 >
@@ -274,7 +284,7 @@ const Login = () => {
           </Card>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { BusFront, Info, MapPin, Layers, LogIn, LogOut, User, Menu, X, PanelRight, MessageCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -18,17 +18,18 @@ import {
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/contexts/AuthContext';
+import { performDirectLogout } from '@/utils/logoutHelper';
 
-const NavItem = ({ 
-  to, 
-  children, 
+const NavItem = ({
+  to,
+  children,
   icon: Icon,
   className,
   isMobile = false,
   onClick,
-}: { 
-  to: string; 
-  children: React.ReactNode; 
+}: {
+  to: string;
+  children: React.ReactNode;
   icon: React.ComponentType<any>;
   className?: string;
   isMobile?: boolean;
@@ -36,11 +37,11 @@ const NavItem = ({
 }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
-  
+
   return (
     <Link to={to} onClick={onClick}>
-      <Button 
-        variant="ghost" 
+      <Button
+        variant="ghost"
         className={cn(
           isMobile ? "w-full justify-start" : "rounded-full gap-2",
           isActive && "bg-primary/10 text-primary dark:bg-primary/20",
@@ -59,21 +60,18 @@ const Navbar = () => {
   const { user, profile, signOut, isLoading } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
-  
+
   // Debug logs
   useEffect(() => {
     // console.log("Navbar auth state:", { user: !!user, profile: profile?.role, isLoading });
   }, [user, profile, isLoading]);
-  
-  const handleLogout = async () => {
-    try {
-      await signOut();
-      // Navigation is now handled in signOut
-    } catch (error) {
-      console.error('Logout failed:', error);
-      // If signOut fails, try to navigate anyway
-      navigate('/login', { replace: true });
-    }
+
+  const handleLogout = () => {
+    // Call signOut from AuthContext
+    signOut();
+
+    // As a fallback, use our direct logout method
+    performDirectLogout();
   };
 
   const getDashboardLink = () => {
@@ -88,18 +86,18 @@ const Navbar = () => {
           <BusFront className="h-5 w-5 text-primary" />
           <span className="text-lg font-bold text-foreground">CampusPro</span>
         </Link>
-        
+
         <div className="hidden md:flex items-center gap-1">
           <NavItem to="/" icon={BusFront}>Home</NavItem>
           <NavItem to="/about" icon={Info}>About</NavItem>
           <NavItem to="/features" icon={PanelRight}>Features</NavItem>
           <NavItem to="/bus-points" icon={MapPin}>Bus Points</NavItem>
           <NavItem to="/feedback" icon={MessageCircle}>Feedback</NavItem>
-          
+
           {user ? (
             <>
               <NavItem to={getDashboardLink()} icon={Layers}>Dashboard</NavItem>
-              
+
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="rounded-full ml-2">
@@ -140,10 +138,10 @@ const Navbar = () => {
               </NavItem>
             </>
           )}
-          
-          
+
+
         </div>
-        
+
         {/* Mobile Menu Button */}
         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
           <SheetTrigger asChild>
@@ -158,7 +156,7 @@ const Navbar = () => {
               <NavItem to="/features" icon={PanelRight} isMobile onClick={() => setMobileMenuOpen(false)}>Features</NavItem>
               <NavItem to="/bus-points" icon={MapPin} isMobile onClick={() => setMobileMenuOpen(false)}>Bus Points</NavItem>
               <NavItem to="/feedback" icon={MessageCircle} isMobile onClick={() => setMobileMenuOpen(false)}>Feedback</NavItem>
-              
+
               {user ? (
                 <>
                   <NavItem to={getDashboardLink()} icon={Layers} isMobile onClick={() => setMobileMenuOpen(false)}>Dashboard</NavItem>
@@ -166,24 +164,24 @@ const Navbar = () => {
                     <p className="px-4 py-2 text-sm font-medium text-muted-foreground">
                       Signed in as: {profile?.full_name || (profile as any)?.username || 'User'}
                     </p>
-                    <NavItem 
-                      to={`/${profile?.role}/profile`} 
-                      icon={User} 
-                      isMobile 
+                    <NavItem
+                      to={`/${profile?.role}/profile`}
+                      icon={User}
+                      isMobile
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Profile
                     </NavItem>
-                    <NavItem 
-                      to={`/${profile?.role}/settings`} 
-                      icon={User} 
-                      isMobile 
+                    <NavItem
+                      to={`/${profile?.role}/settings`}
+                      icon={User}
+                      isMobile
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Settings
                     </NavItem>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       className="w-full justify-start text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/30"
                       onClick={() => {
                         handleLogout();

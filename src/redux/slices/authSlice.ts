@@ -3,6 +3,7 @@ import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { supabase } from '@/integrations/supabase/client';
 import { Profile } from '@/contexts/AuthContext';
 import { User } from '@supabase/supabase-js';
+import { validateRole, AppRole } from '@/utils/roleValidation';
 
 // Types
 interface AuthState {
@@ -35,7 +36,7 @@ export const login = createAsyncThunk(
       // Validate input
       if (!email || !email.trim()) return rejectWithValue('Email is required');
       if (!password || !password.trim()) return rejectWithValue('Password is required');
-      
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -56,11 +57,9 @@ export const login = createAsyncThunk(
         // Don't throw error here, just return null profile
       }
 
-      // Convert database role to type-safe role
-      const role = profileData?.role === 'admin' || profileData?.role === 'driver'
-        ? profileData.role as 'admin' | 'driver'
-        : 'driver';
-        
+      // Validate and convert database role to type-safe role
+      const role = profileData ? validateRole(profileData.role) : 'driver';
+
       const profile: Profile | null = profileData ? {
         ...profileData,
         role,
@@ -77,7 +76,7 @@ export const login = createAsyncThunk(
 export const signUp = createAsyncThunk(
   'auth/signUp',
   async (
-    { email, password, fullName, role, phone }: 
+    { email, password, fullName, role, phone }:
     { email: string; password: string; fullName: string; role: string; phone: string },
     { rejectWithValue }
   ) => {
@@ -86,11 +85,11 @@ export const signUp = createAsyncThunk(
       if (!email || !email.trim()) return rejectWithValue('Email is required');
       if (!password || password.length < 6) return rejectWithValue('Password must be at least 6 characters');
       if (!fullName || !fullName.trim()) return rejectWithValue('Full name is required');
-      
+
       // Make sure we have a valid value for username
       const username = fullName.trim();
       if (!username) return rejectWithValue('Username cannot be empty');
-      
+
       // Create auth user
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -107,9 +106,9 @@ export const signUp = createAsyncThunk(
       if (error) throw error;
       if (!data.user) throw new Error('User registration failed: no user data returned');
 
-      // Convert role string to the Supabase enum type
-      const safeRole = (role === 'admin' || role === 'driver') ? role : 'driver';
-        
+      // Validate role using our utility function
+      const safeRole = validateRole(role);
+
       // Create a profile for the new user with ID matching auth user ID
       const { error: profileError } = await supabase.from('profiles').insert({
         id: data.user.id,
@@ -137,10 +136,10 @@ export const signUp = createAsyncThunk(
         // Don't throw, just return null profile
       }
 
-      // Ensure type safety for role
+      // Ensure type safety for role using our validation utility
       const typeSafeProfile: Profile | null = profileData ? {
         ...profileData,
-        role: profileData.role as 'admin' | 'driver',
+        role: validateRole(profileData.role),
         id: profileData.id,
       } : null;
 
@@ -152,51 +151,21 @@ export const signUp = createAsyncThunk(
   }
 );
 
-export const logout = createAsyncThunk('auth/logout', async (_, { rejectWithValue, dispatch }) => {
-  try {
-    // Clear local storage immediately
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && (key.includes('supabase') || key.includes('auth'))) {
-        localStorage.removeItem(key);
-      }
-    }
-    
-    // Clear session storage as well
-    for (let i = 0; i < sessionStorage.length; i++) {
-      const key = sessionStorage.key(i);
-      if (key && (key.includes('supabase') || key.includes('auth'))) {
-        sessionStorage.removeItem(key);
-      }
-    }
-    
-    // Set a flag that we're logging out
-    sessionStorage.setItem('just_logged_out', 'true');
-    
-    // Reset auth state in Redux immediately to prevent loading screens
-    dispatch(resetAuthState());
-    
-    // Then sign out from Supabase
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    
-    return null;
-  } catch (error: any) {
-    // Even on error, ensure state is reset
-    dispatch(resetAuthState());
-    return rejectWithValue(handleAuthError(error));
-  } finally {
-    // Clear the logging out flag
-    sessionStorage.removeItem('logging_out');
-  }
+export const logout = createAsyncThunk('auth/logout', async (_, { dispatch }) => {
+  // Reset auth state in Redux immediately - this is the most important part
+  dispatch(resetAuthState());
+
+  // Return immediately - don't do any async work here
+  // The actual logout cleanup is handled by the logoutHelper utility
+  return null;
 });
 
 export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { rejectWithValue }) => {
   try {
     const { data, error } = await supabase.auth.getSession();
-    
+
     if (error) throw error;
-    
+
     if (data.session?.user) {
       // Fetch user profile
       const { data: profileData, error: profileError } = await supabase
@@ -212,10 +181,9 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
 
       // Ensure type safety for role if profile exists
       if (profileData) {
-        const role = profileData.role === 'admin' || profileData.role === 'driver'
-          ? profileData.role as 'admin' | 'driver'
-          : 'driver';
-        
+        // Use our validation utility to ensure role is valid
+        const role = validateRole(profileData.role);
+
         const profile: Profile = {
           ...profileData,
           role,
@@ -227,7 +195,7 @@ export const fetchSession = createAsyncThunk('auth/fetchSession', async (_, { re
 
       return { user: data.session.user, profile: null };
     }
-    
+
     return { user: null, profile: null };
   } catch (error: any) {
     return rejectWithValue(handleAuthError(error));
@@ -262,7 +230,7 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload as string;
     });
-    
+
     // Sign Up
     builder.addCase(signUp.pending, (state) => {
       state.isLoading = true;
@@ -277,7 +245,7 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.error = action.payload as string;
     });
-    
+
     // Logout
     builder.addCase(logout.pending, (state) => {
       // Reset state immediately to prevent loading screens
@@ -291,7 +259,7 @@ const authSlice = createSlice({
       // Even on error, return initial state
       return { ...initialState, error: action.payload as string };
     });
-    
+
     // Fetch Session
     builder.addCase(fetchSession.pending, (state) => {
       state.isLoading = true;

@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  BusFront, 
-  Home, 
-  Users, 
-  List, 
-  User, 
-  Settings, 
+import {
+  BusFront,
+  Home,
+  Users,
+  List,
+  User,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -17,6 +17,7 @@ import {
   Sun,
   LucideIcon
 } from 'lucide-react';
+import { performDirectLogout } from '@/utils/logoutHelper';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -48,12 +49,12 @@ type NavItemProps = {
 };
 
 const NavItem = ({ icon: Icon, label, href, active, onClick, className }: NavItemProps) => (
-  <a 
-    href={href} 
+  <a
+    href={href}
     className={cn(
       "flex items-center gap-3 px-3 py-2 rounded-md transition-colors",
-      active 
-        ? "bg-primary text-primary-foreground" 
+      active
+        ? "bg-primary text-primary-foreground"
         : "text-gray-400 hover:bg-primary/10 hover:text-primary",
       className
     )}
@@ -77,7 +78,7 @@ type NavGroupProps = {
 
 const NavGroup = ({ label, children, defaultOpen = true }: NavGroupProps) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
-  
+
   return (
     <Collapsible
       open={isOpen}
@@ -111,36 +112,24 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
   const { profile } = useAppSelector(state => state.auth);
   const { theme, setTheme } = useTheme();
   const { signOut } = useAuth();
-  
+
   const toggleTheme = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark');
   };
-  
+
   const userName = profile?.full_name || (role === 'admin' ? 'Admin User' : 'Driver User');
   const userInitials = userName.substring(0, 2).toUpperCase();
 
-  const handleLogout = async () => {
-    try {
-      // Set flags and clear state immediately to prevent UI freezing
-      sessionStorage.setItem('logging_out', 'true');
-      localStorage.removeItem('supabase.auth.token');
-      
-      // Navigate immediately without waiting for signOut to complete
-      navigate('/login', { replace: true });
-      
-      // Then perform the actual logout asynchronously
-      signOut().catch((error) => {
-        console.error('Error during logout process:', error);
-      });
-    } catch (error) {
-      console.error('Error initiating logout:', error);
-      // Try to navigate anyway
-      navigate('/login', { replace: true });
-    }
+  const handleLogout = () => {
+    // Call the signOut method from AuthContext
+    signOut();
+
+    // As a fallback, use our direct logout method
+    performDirectLogout();
   };
 
   // Define navigation items based on role
-  const navItems = role === 'admin' 
+  const navItems = role === 'admin'
     ? [
         { icon: Home, label: 'Dashboard', href: '/admin/dashboard' },
         { icon: Users, label: 'Drivers', href: '/admin/drivers' },
@@ -158,11 +147,11 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
   return (
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
-      <aside 
+      <aside
         className={cn(
           "fixed inset-y-0 left-0 z-50 transition-transform flex flex-col",
-          sidebarOpen 
-            ? "translate-x-0 w-64 bg-sidebar text-sidebar-foreground" 
+          sidebarOpen
+            ? "translate-x-0 w-64 bg-sidebar text-sidebar-foreground"
             : "-translate-x-full w-64 md:translate-x-0 md:w-16 bg-sidebar text-sidebar-foreground",
           "bg-[hsl(var(--sidebar-background))]"
         )}
@@ -173,7 +162,7 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
           "border-[hsl(var(--sidebar-border))]",
           !sidebarOpen && "md:justify-center"
         )}>
-          <div 
+          <div
             className="bus-gradient-bg rounded-full p-2 flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity"
             onClick={() => navigate('/')}
             title="Go to Home Page"
@@ -181,23 +170,23 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
             <BusFront className="h-5 w-5 text-white" />
           </div>
           {sidebarOpen && (
-            <span 
+            <span
               className="ml-2 font-bold text-lg text-sidebar-foreground cursor-pointer hover:text-primary transition-colors"
               onClick={() => navigate('/')}
             >
               CampusPro
             </span>
           )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="ml-auto md:hidden text-sidebar-foreground"
             onClick={() => setSidebarOpen(false)}
           >
             <X className="h-5 w-5" />
           </Button>
         </div>
-        
+
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {sidebarOpen ? (
@@ -207,7 +196,7 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
                   Main
                 </h3>
                 <div className="mt-2 space-y-1">
-                  <NavItem 
+                  <NavItem
                     key="home"
                     icon={BusFront}
                     label="Home"
@@ -216,15 +205,15 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
                     className="text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                   />
                   {navItems.map((item) => (
-                    <NavItem 
+                    <NavItem
                       key={item.label}
                       icon={item.icon}
                       label={item.label}
                       href={item.href}
                       active={currentPath === item.href}
                       onClick={() => navigate(item.href)}
-                      className={currentPath === item.href ? 
-                        "bg-[hsl(var(--sidebar-primary))] text-sidebar-primary-foreground" : 
+                      className={currentPath === item.href ?
+                        "bg-[hsl(var(--sidebar-primary))] text-sidebar-primary-foreground" :
                         "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                       }
                     />
@@ -248,8 +237,8 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
                   onClick={() => navigate(item.href)}
                   className={cn(
                     "p-2 rounded-md",
-                    currentPath === item.href ? 
-                      "bg-[hsl(var(--sidebar-primary))] text-sidebar-primary-foreground" : 
+                    currentPath === item.href ?
+                      "bg-[hsl(var(--sidebar-primary))] text-sidebar-primary-foreground" :
                       "text-sidebar-foreground/70 hover:text-sidebar-foreground"
                   )}
                   title={item.label}
@@ -260,7 +249,7 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
             </div>
           )}
         </nav>
-        
+
         {/* User Profile Section */}
         <div className={cn(
           "p-4 border-t border-[hsl(var(--sidebar-border))]",
@@ -298,9 +287,9 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
         {/* Header */}
         <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4 sticky top-0 z-30">
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="mr-2"
             >
@@ -308,17 +297,17 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
             </Button>
             <h1 className="text-xl font-semibold">{title}</h1>
           </div>
-          
+
           <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={toggleTheme}
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
@@ -350,7 +339,7 @@ const DashboardLayout = ({ children, title, role, currentPath }: DashboardLayout
             </DropdownMenu>
           </div>
         </header>
-        
+
         {/* Page Content */}
         <div className="p-6">
           {children}

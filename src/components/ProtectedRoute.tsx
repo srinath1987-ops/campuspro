@@ -5,15 +5,16 @@ import { useAppSelector, useAppDispatch } from '@/redux/hooks';
 import { fetchSession } from '@/redux/slices/authSlice';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { performDirectLogout } from '@/utils/logoutHelper';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   allowedRole?: 'admin' | 'driver' | undefined;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  allowedRole 
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+  children,
+  allowedRole
 }) => {
   // Use Redux state instead of auth context
   const { user, profile, isLoading } = useAppSelector(state => state.auth);
@@ -26,23 +27,39 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const visibilityChangeRef = useRef<boolean>(false);
   const sessionCheckRef = useRef<boolean>(false);
   const initialCheckDoneRef = useRef<boolean>(false);
-  
+
   // Check if we're in a logout process using URL or session storage
   useEffect(() => {
     // If we're coming from a logout action, skip loading state
     const isJustLoggedOut = sessionStorage.getItem('just_logged_out') === 'true';
     if (isJustLoggedOut) {
       setLoggingOut(true);
-      sessionStorage.removeItem('just_logged_out');
-      navigate('/login', { replace: true });
+      try {
+        sessionStorage.removeItem('just_logged_out');
+      } catch (e) {
+        console.error('Failed to remove logout flag:', e);
+      }
+
+      // Check if we need to redirect to login
+      if (location.pathname !== '/login') {
+        // Use our direct logout method
+        performDirectLogout();
+      }
       return;
     }
-  }, [navigate]);
-  
+
+    // Check for clean logout flag
+    const cleanLogoutCompleted = localStorage.getItem('clean_logout_completed');
+    if (cleanLogoutCompleted === 'true') {
+      // Clear the flag to prevent loops
+      localStorage.removeItem('clean_logout_completed');
+    }
+  }, [navigate, location.pathname]);
+
   // Try to refresh session on mount, but only once
   useEffect(() => {
     let isMounted = true;
-    
+
     const checkSession = async () => {
       if (!user && !loggingOut && !sessionCheckRef.current && !initialCheckDoneRef.current) {
         sessionCheckRef.current = true;
@@ -66,37 +83,37 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     };
-    
+
     checkSession();
-    
+
     return () => {
       isMounted = false;
     };
   }, [dispatch, user, loggingOut]);
-  
+
   // Handle visibility change to prevent unnecessary reloads
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && !initialCheckDoneRef.current) {
         visibilityChangeRef.current = true;
-        
+
         // Check session when tab becomes visible again
         dispatch(fetchSession());
-        
+
         // Wait a short delay before allowing redirects again
         setTimeout(() => {
           visibilityChangeRef.current = false;
         }, 1000);
       }
     };
-    
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [dispatch]);
-  
+
   // Handle authentication notifications and redirects
   useEffect(() => {
     // Only process when we're done loading and not logging out
@@ -108,7 +125,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           description: "Please log in to access this page.",
           variant: "destructive"
         });
-        
+
         // Force navigation to login page with return URL
         navigate('/login', {
           replace: true,
@@ -120,7 +137,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           description: `This page is only accessible to ${allowedRole}s.`,
           variant: "destructive"
         });
-        
+
         // Redirect based on user role
         if (profile?.role === 'admin') {
           navigate('/admin/dashboard', { replace: true });
@@ -161,7 +178,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
       </div>
     );
   }
-  
+
   // User is authenticated and has correct role
   return <>{children}</>;
 };

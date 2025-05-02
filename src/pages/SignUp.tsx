@@ -29,22 +29,41 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { useAppDispatch } from '@/redux/hooks';
 import { signUp } from '@/redux/slices/authSlice';
+import { sanitizeString, isValidEmail, isValidPhone } from '@/utils/inputValidation';
 
-// Define the sign-up form schema with default values for driver_name
+// Define the sign-up form schema with enhanced validation
 const signUpSchema = z.object({
-  username: z.string().min(3, {
-    message: "Username must be at least 3 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(6, {
-    message: "Password must be at least 6 characters.",
-  }),
-  phone: z.string().min(10, {
-    message: "Please enter a valid phone number.",
-  }),
+  username: z.string()
+    .min(3, { message: "Username must be at least 3 characters." })
+    .max(50, { message: "Username cannot exceed 50 characters." })
+    .refine(val => /^[a-zA-Z0-9\s._-]+$/.test(val), {
+      message: "Username can only contain letters, numbers, spaces, and ._-"
+    }),
+
+  email: z.string()
+    .email({ message: "Please enter a valid email address." })
+    .refine(val => isValidEmail(val), {
+      message: "Please enter a valid email address."
+    }),
+
+  password: z.string()
+    .min(6, { message: "Password must be at least 6 characters." })
+    .max(100, { message: "Password is too long." })
+    .refine(val => /[A-Z]/.test(val), {
+      message: "Password must contain at least one uppercase letter."
+    })
+    .refine(val => /[0-9]/.test(val), {
+      message: "Password must contain at least one number."
+    }),
+
+  phone: z.string()
+    .min(10, { message: "Please enter a valid phone number." })
+    .refine(val => isValidPhone(val), {
+      message: "Please enter a valid phone number with at least 10 digits."
+    }),
+
   role: z.literal('driver'),
+
   bus_number: z.string().optional(),
 });
 
@@ -112,26 +131,37 @@ const SignUp = () => {
   const onSubmit = async (values: SignUpValues) => {
     setIsLoading(true);
     try {
-      console.log("Submitting signup with values:", values);
-      
-      // Use Redux action directly to ensure all necessary values are passed
-      await dispatch(signUp({
-        email: values.email,
-        password: values.password,
-        fullName: values.username,
+      // Sanitize input values
+      const sanitizedValues = {
+        email: sanitizeString(values.email),
+        password: values.password, // Don't sanitize password
+        fullName: sanitizeString(values.username),
         role: values.role,
-        phone: values.phone
-      })).unwrap();
-      
+        phone: sanitizeString(values.phone)
+      };
+
+      // Additional validation
+      if (!isValidEmail(sanitizedValues.email)) {
+        throw new Error('Please enter a valid email address');
+      }
+
+      if (!isValidPhone(sanitizedValues.phone)) {
+        throw new Error('Please enter a valid phone number');
+      }
+
+      // Use Redux action with sanitized values
+      await dispatch(signUp(sanitizedValues)).unwrap();
+
       // Clear saved form data after successful signup
       localStorage.removeItem(SIGNUP_FORM_STATE_KEY);
-      
+
       toast({
         title: "Account created",
-        description: "Your account has been created successfully",
+        description: "Your account has been created successfully. You can now log in.",
         variant: "default"
       });
-      
+
+      // Navigate to login page
       navigate('/login');
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -149,7 +179,7 @@ const SignUp = () => {
   return (
     <div className="flex flex-col min-h-screen">
       <Navbar />
-      
+
       <main className="flex-1 bus-hero-pattern flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Card className="shadow-lg">
@@ -232,10 +262,10 @@ const SignUp = () => {
                       </FormItem>
                     )}
                   />
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full bus-gradient-bg hover:opacity-90" 
+
+                  <Button
+                    type="submit"
+                    className="w-full bus-gradient-bg hover:opacity-90"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -266,7 +296,7 @@ const SignUp = () => {
           </Card>
         </div>
       </main>
-      
+
       <Footer />
     </div>
   );

@@ -10,6 +10,7 @@ import { useAppDispatch, useAppSelector } from "./redux/hooks";
 import { fetchSession } from "./redux/slices/authSlice";
 import { ThemeProvider } from "./components/theme-provider";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { initSessionManager, updateLastActivity, checkSessionTimeout } from "./utils/sessionManager";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Features from "./pages/Features";
@@ -60,46 +61,65 @@ const AppContent = () => {
     }
   }, [user]);
 
-  // Initialize auth session on app start
+  // Initialize auth session and session manager on app start
   useEffect(() => {
     const initializeApp = async () => {
       try {
         await dispatch(fetchSession()).unwrap();
+
+        // Update activity timestamp after successful session fetch
+        updateLastActivity();
       } catch (error) {
         console.error("Error initializing session:", error);
       } finally {
         setAppInitialized(true);
       }
     };
-    
+
     initializeApp();
-    
+
+    // Initialize session manager
+    const cleanupSessionManager = initSessionManager();
+
     // Set up periodic session check that only runs when the document is visible
-    // but use long interval to prevent unnecessary reloads
-    sessionCheckIntervalRef.current = window.setInterval(() => {
+    sessionCheckIntervalRef.current = window.setInterval(async () => {
       if (document.visibilityState === 'visible' && !visibilityChangeRef.current) {
-        dispatch(fetchSession());
+        // First check if session has timed out
+        const hasTimedOut = await checkSessionTimeout();
+
+        // Only fetch session if not timed out
+        if (!hasTimedOut) {
+          dispatch(fetchSession());
+          // Update activity timestamp after session check
+          updateLastActivity();
+        }
       }
-    }, 5 * 60 * 1000); // Check every 5 minutes
-    
+    }, 2 * 60 * 1000); // Check every 2 minutes
+
     return () => {
       if (sessionCheckIntervalRef.current) {
         clearInterval(sessionCheckIntervalRef.current);
       }
+      cleanupSessionManager();
     };
   }, [dispatch]);
 
   // Handle visibility change events without triggering reloads
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       // When page becomes visible again
       if (document.visibilityState === 'visible') {
         visibilityChangeRef.current = true;
-        
-        // Only check the session if the user was previously logged in
-        // and don't force any reloads/redirects unless absolutely necessary
-        if (wasLoggedIn.current) {
-          // We'll do a silent session check without forcing a reload
+
+        // First check if session has timed out
+        const hasTimedOut = await checkSessionTimeout();
+
+        // Only proceed if not timed out and user was previously logged in
+        if (!hasTimedOut && wasLoggedIn.current) {
+          // Update activity timestamp
+          updateLastActivity();
+
+          // Do a silent session check without forcing a reload
           dispatch(fetchSession())
             .then(() => {
               setTimeout(() => {
@@ -110,13 +130,15 @@ const AppContent = () => {
               visibilityChangeRef.current = false;
             });
         } else {
-          visibilityChangeRef.current = false;
+          setTimeout(() => {
+            visibilityChangeRef.current = false;
+          }, 1000);
         }
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
@@ -125,10 +147,10 @@ const AppContent = () => {
   // Redirect to login page if session is lost, except for public routes
   useEffect(() => {
     if (!appInitialized) return;
-    
+
     const publicRoutes = ['/', '/about', '/features', '/bus-points', '/feedback', '/login', '/signup'];
     const isPublicRoute = publicRoutes.some(route => location.pathname === route);
-    
+
     // Only redirect if:
     // 1. We're not in a loading state
     // 2. User is not logged in
@@ -161,99 +183,99 @@ const AppContent = () => {
       <Route path="/feedback" element={<Feedback />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<SignUp />} />
-      
+
       {/* Admin Routes */}
-      <Route 
-        path="/admin/dashboard" 
+      <Route
+        path="/admin/dashboard"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/profile" 
+      <Route
+        path="/admin/profile"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/settings" 
+      <Route
+        path="/admin/settings"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/drivers" 
+      <Route
+        path="/admin/drivers"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminDrivers />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/buses" 
+      <Route
+        path="/admin/buses"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminBuses />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/reports" 
+      <Route
+        path="/admin/reports"
         element={
           <ProtectedRoute allowedRole="admin">
             <AdminReports />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin/buses/add" 
+      <Route
+        path="/admin/buses/add"
         element={
           <ProtectedRoute allowedRole="admin">
             <AddBus />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/admin" 
-        element={<Navigate to="/admin/dashboard" replace />} 
+      <Route
+        path="/admin"
+        element={<Navigate to="/admin/dashboard" replace />}
       />
-      
+
       {/* Driver Routes */}
-      <Route 
-        path="/driver/dashboard" 
+      <Route
+        path="/driver/dashboard"
         element={
           <ProtectedRoute allowedRole="driver">
             <DriverDashboard />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/driver/profile" 
+      <Route
+        path="/driver/profile"
         element={
           <ProtectedRoute allowedRole="driver">
             <DriverProfile />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/driver/settings" 
+      <Route
+        path="/driver/settings"
         element={
           <ProtectedRoute allowedRole="driver">
             <DriverSettings />
           </ProtectedRoute>
-        } 
+        }
       />
-      <Route 
-        path="/driver" 
-        element={<Navigate to="/driver/dashboard" replace />} 
+      <Route
+        path="/driver"
+        element={<Navigate to="/driver/dashboard" replace />}
       />
-      
+
       {/* Catch-all route */}
       <Route path="*" element={<NotFound />} />
     </Routes>
@@ -269,7 +291,7 @@ const App = () => {
     // Also store the preference in localStorage
     localStorage.setItem('campus-pro-theme', 'dark');
   }, []);
-  
+
   return (
     <BrowserRouter>
       {/* Fix provider ordering - React Redux Provider should be outside all other providers */}

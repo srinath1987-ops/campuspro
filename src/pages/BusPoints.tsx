@@ -98,10 +98,10 @@ const safeParseStops = (stops: Json): { time: string; location: string }[] => {
       }
     }
     
-    console.log("Unknown stops format:", stops);
+    // console.log("Unknown stops format:", stops);
     return [];
   } catch (error) {
-    console.error('Error parsing stops:', error);
+    // console.error('Error parsing stops:', error);
     return [];
   }
 };
@@ -257,7 +257,7 @@ const BusPoints = () => {
           }
         ];
 
-        console.log('Provided routes data:', routesData);
+        // console.log('Provided routes data:', routesData);
 
         // Process routes - ensuring we keep ALL routes even if some fields are null
         const processedRoutes: BusRoute[] = [];
@@ -277,7 +277,7 @@ const BusPoints = () => {
           });
         }
         
-        console.log('Processed routes:', processedRoutes);
+        // console.log('Processed routes:', processedRoutes);
         
         // Always ensure we have some routes to display
         if (processedRoutes.length === 0) {
