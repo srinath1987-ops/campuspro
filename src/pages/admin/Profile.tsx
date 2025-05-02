@@ -38,7 +38,7 @@ const Profile = () => {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [fullName, setFullName] = useState(profile?.full_name || '');
+  const [fullName, setFullName] = useState(profile?.full_name || profile?.username || '');
   const [phoneNumber, setPhoneNumber] = useState(profile?.phone_number || '');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -48,7 +48,7 @@ const Profile = () => {
 
   useEffect(() => {
     if (profile) {
-      setFullName(profile.full_name || '');
+      setFullName(profile.full_name || profile.username || '');
       setPhoneNumber(profile.phone_number || '');
       setAvatarUrl(profile.avatar_url || null);
     }
@@ -80,11 +80,31 @@ const Profile = () => {
 
     setIsUpdating(true);
     try {
+      // Update both full_name and username fields to ensure consistency
       await updateProfile({
         full_name: fullName,
+        username: fullName, // Also update username since that's what's used in the database
         phone_number: phoneNumber,
         avatar_url: avatarUrl
       });
+
+      // After successful update, make a direct database update to ensure full_name is set
+      if (profile?.id) {
+        try {
+          const { error } = await supabase
+            .from('profiles')
+            .update({
+              full_name: fullName
+            })
+            .eq('id', profile.id);
+
+          if (error) {
+            console.error("Error updating full_name directly:", error);
+          }
+        } catch (err) {
+          console.error("Exception during direct full_name update:", err);
+        }
+      }
     } finally {
       setIsUpdating(false);
     }
@@ -112,7 +132,7 @@ const Profile = () => {
     setIsUpdating(true);
     try {
       await updatePassword(newPassword);
-      
+
       // Reset the form
       setCurrentPassword('');
       setNewPassword('');
@@ -138,14 +158,14 @@ const Profile = () => {
       try {
         const { data: buckets } = await supabase.storage.listBuckets();
         const profilesBucketExists = buckets?.some(bucket => bucket.name === 'profiles');
-        
+
         if (!profilesBucketExists) {
           // Create the bucket if it doesn't exist
           const { error: createBucketError } = await supabase.storage.createBucket('profiles', {
             public: true,
             fileSizeLimit: 5242880 // 5MB
           });
-          
+
           if (createBucketError) {
             console.error("Error creating bucket:", createBucketError);
             throw createBucketError;
@@ -198,8 +218,8 @@ const Profile = () => {
 
         if (updateError) {
           console.error("Error updating profile with avatar_url:", updateError);
-          
-          // If there was an error updating, try using the updateProfile function 
+
+          // If there was an error updating, try using the updateProfile function
           // from the AuthContext as a fallback
           await updateProfile({
             avatar_url: newAvatarUrl
@@ -218,11 +238,12 @@ const Profile = () => {
         title: "Profile Picture Updated",
         description: "Your profile picture has been updated successfully."
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error uploading avatar:', error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to upload profile picture.";
       toast({
         title: "Upload Failed",
-        description: error.message || "Failed to upload profile picture.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -256,7 +277,7 @@ const Profile = () => {
                         <Avatar className="w-32 h-32">
                           <AvatarImage src={avatarUrl} alt={fullName} />
                           <AvatarFallback className="bus-gradient-bg text-white text-2xl">
-                            {fullName.charAt(0).toUpperCase()}
+                            {fullName ? fullName.charAt(0).toUpperCase() : 'A'}
                           </AvatarFallback>
                         </Avatar>
                       ) : (
@@ -271,10 +292,10 @@ const Profile = () => {
                           <Upload className="h-4 w-4" />
                           <span>{isUploading ? "Uploading..." : "Upload Image"}</span>
                         </div>
-                        <Input 
-                          id="avatar-upload" 
-                          type="file" 
-                          className="hidden" 
+                        <Input
+                          id="avatar-upload"
+                          type="file"
+                          className="hidden"
                           accept="image/*"
                           onChange={handleAvatarUpload}
                           disabled={isUploading}
@@ -282,7 +303,7 @@ const Profile = () => {
                       </Label>
                     </div>
                   </div>
-                  
+
                   {/* Rest of profile form */}
                   <div className="flex-1 space-y-4">
                     <div className="space-y-2">
@@ -417,7 +438,7 @@ const Profile = () => {
                         <Button variant="outline" onClick={() => setPasswordDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button 
+                        <Button
                           onClick={handlePasswordUpdate}
                           disabled={isUpdating}
                         >
