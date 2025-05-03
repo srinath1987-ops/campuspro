@@ -1,48 +1,12 @@
 
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BusFront, Cpu, Smartphone, Shield, Clock, Users } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import Footer from '@/components/Footer';
 import { ResizableNavbar } from '@/components/ResizableNavbar';
-import { useCountAnimate } from '@/hooks/useCountAnimate';
+import { HoverEffect } from "@/components/ui/card-hover-effect";
 
-// Feature Card Component
-const FeatureCard = ({
-  icon: Icon,
-  title,
-  description
-}: {
-  icon: React.ComponentType<any>;
-  title: string;
-  description: string;
-}) => (
-  <div className="bus-card p-6 flex flex-col items-center text-center bg-card dark:bg-card border border-border">
-    <div className="mb-4 p-3 bus-gradient-bg rounded-full">
-      <Icon className="h-6 w-6 text-white" />
-    </div>
-    <h3 className="text-xl font-bold mb-2 text-foreground">{title}</h3>
-    <p className="text-muted-foreground">{description}</p>
-  </div>
-);
 
-// Stat Card Component with animated counter
-const StatCard = ({
-  value,
-  label
-}: {
-  value: string;
-  label: string;
-}) => {
-  const animatedValue = useCountAnimate(value);
-
-  return (
-    <div className="bg-card dark:bg-card border border-border rounded-lg shadow-md p-6 text-center">
-      <div className="text-3xl font-bold bus-gradient-text mb-2">{animatedValue}</div>
-      <div className="text-muted-foreground">{label}</div>
-    </div>
-  );
-};
 
 const Index = () => {
   const navigate = useNavigate();
@@ -91,38 +55,40 @@ const Index = () => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard
-              icon={BusFront}
-              title="Real-Time Bus Tracking"
-              description="Monitor buses inside and outside campus with precise location tracking using RFID technology."
-            />
-            <FeatureCard
-              icon={Cpu}
-              title="IoT Integration"
-              description="ESP32 and RFID readers work together to automate gate access and update status in real-time."
-            />
-            <FeatureCard
-              icon={Smartphone}
-              title="User-Friendly Interface"
-              description="Intuitive dashboards for administrators and drivers with role-based access."
-            />
-            <FeatureCard
-              icon={Shield}
-              title="Secure Authentication"
-              description="Role-based access control ensures only authorized personnel can access specific features."
-            />
-            <FeatureCard
-              icon={Clock}
-              title="Timestamp Logging"
-              description="Automatic recording of entry and exit times for comprehensive reporting and analysis."
-            />
-            <FeatureCard
-              icon={Users}
-              title="Student Count Management"
-              description="Easy-to-use interface for drivers to update daily student counts for each route."
-            />
-          </div>
+          <HoverEffect
+            items={[
+              {
+                icon: <BusFront className="h-6 w-6" />,
+                title: "Real-Time Bus Tracking",
+                description: "Monitor buses inside and outside campus with precise location tracking using RFID technology."
+              },
+              {
+                icon: <Cpu className="h-6 w-6" />,
+                title: "IoT Integration",
+                description: "ESP32 and RFID readers work together to automate gate access and update status in real-time."
+              },
+              {
+                icon: <Smartphone className="h-6 w-6" />,
+                title: "User-Friendly Interface",
+                description: "Intuitive dashboards for administrators and drivers with role-based access."
+              },
+              {
+                icon: <Shield className="h-6 w-6" />,
+                title: "Secure Authentication",
+                description: "Role-based access control ensures only authorized personnel can access specific features."
+              },
+              {
+                icon: <Clock className="h-6 w-6" />,
+                title: "Timestamp Logging",
+                description: "Automatic recording of entry and exit times for comprehensive reporting and analysis."
+              },
+              {
+                icon: <Users className="h-6 w-6" />,
+                title: "Student Count Management",
+                description: "Easy-to-use interface for drivers to update daily student counts for each route."
+              }
+            ]}
+          />
         </div>
       </section>
 
