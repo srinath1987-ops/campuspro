@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/card";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 import { useAppDispatch } from '@/redux/hooks';
 import { signUp } from '@/redux/slices/authSlice';
 import { sanitizeString, isValidEmail, isValidPhone } from '@/utils/inputValidation';
@@ -177,8 +177,8 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
 
       <main className="flex-1 bus-hero-pattern flex items-center justify-center p-4">
         <div className="w-full max-w-md">

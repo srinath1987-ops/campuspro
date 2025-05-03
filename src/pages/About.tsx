@@ -1,16 +1,16 @@
 import React from 'react';
 import { Users, Code, School, Cpu, Server, Award } from 'lucide-react';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 
 // Team Member Card Component
-const TeamMemberCard = ({ 
-  name, 
-  role, 
-  imageUrl 
-}: { 
-  name: string; 
-  role: string; 
+const TeamMemberCard = ({
+  name,
+  role,
+  imageUrl
+}: {
+  name: string;
+  role: string;
   imageUrl: string;
 }) => (
   <div className="flex flex-col items-center text-center">
@@ -23,13 +23,13 @@ const TeamMemberCard = ({
 );
 
 // Technology Card Component
-const TechnologyCard = ({ 
-  icon: Icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ComponentType<any>; 
-  title: string; 
+const TechnologyCard = ({
+  icon: Icon,
+  title,
+  description
+}: {
+  icon: React.ComponentType<any>;
+  title: string;
   description: string;
 }) => (
   <div className="bg-card dark:bg-card rounded-xl shadow-md p-6 flex flex-col items-center text-center transition-all hover:shadow-lg hover:-translate-y-1 border border-border">
@@ -43,9 +43,9 @@ const TechnologyCard = ({
 
 const About = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
+
       {/* Hero Section */}
       <section className="bus-hero-pattern py-16 md:py-20">
         <div className="container mx-auto px-4">
@@ -59,7 +59,7 @@ const About = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Mission Section */}
       <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
@@ -68,7 +68,7 @@ const About = () => {
               <h2 className="text-3xl font-bold mb-4 text-foreground">Our Mission</h2>
               <div className="w-20 h-1 bus-gradient-bg mx-auto rounded-full mb-6"></div>
             </div>
-            
+
             <div className="text-lg text-muted-foreground space-y-6">
               <p>
                 At CampusPro, our mission is to transform campus transportation management through innovative IoT technology. We believe that efficient, transparent, and data-driven bus operations can significantly improve the campus experience for students, staff, and administrators.
@@ -83,7 +83,7 @@ const About = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Technology Stack Section */}
       <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
@@ -93,42 +93,42 @@ const About = () => {
               We leverage cutting-edge technologies to deliver a robust and scalable solution
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            <TechnologyCard 
-              icon={Cpu} 
-              title="ESP32 & RFID" 
+            <TechnologyCard
+              icon={Cpu}
+              title="ESP32 & RFID"
               description="IoT devices with RFID readers to automatically detect bus entry and exit at campus gates."
             />
-            <TechnologyCard 
-              icon={Server} 
-              title="Supabase Backend" 
+            <TechnologyCard
+              icon={Server}
+              title="Supabase Backend"
               description="Secure, scalable database and authentication system for storing and managing all bus data."
             />
-            <TechnologyCard 
-              icon={Code} 
-              title="React & TypeScript" 
+            <TechnologyCard
+              icon={Code}
+              title="React & TypeScript"
               description="Modern frontend framework for building responsive, interactive user interfaces with type safety."
             />
-            <TechnologyCard 
-              icon={School} 
-              title="Custom Analytics" 
+            <TechnologyCard
+              icon={School}
+              title="Custom Analytics"
               description="Built-in analytics tools for visualizing student counts, bus utilization, and other key metrics."
             />
-            <TechnologyCard 
-              icon={Users} 
-              title="Role-Based Access" 
+            <TechnologyCard
+              icon={Users}
+              title="Role-Based Access"
               description="Tailored user experiences with separate admin and driver portals with appropriate privileges."
             />
-            <TechnologyCard 
-              icon={Award} 
-              title="Shadcn UI Components" 
+            <TechnologyCard
+              icon={Award}
+              title="Shadcn UI Components"
               description="Beautiful, accessible UI components for a modern and intuitive user experience."
             />
           </div>
         </div>
       </section>
-      
+
       {/* Team Section */}
       <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
@@ -138,27 +138,27 @@ const About = () => {
               Meet the talented individuals behind CampusPro
             </p>
           </div>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-10 max-w-4xl mx-auto">
-            <TeamMemberCard 
-              name="V Sree Aditya" 
-              role="Backend and IoT Developer" 
-              imageUrl="https://iili.io/37TqMrX.jpg" 
+            <TeamMemberCard
+              name="V Sree Aditya"
+              role="Backend and IoT Developer"
+              imageUrl="https://iili.io/37TqMrX.jpg"
             />
-            <TeamMemberCard 
-              name="Venkataraman TSK" 
-              role="Frontend Developer" 
-              imageUrl="https://iili.io/37Td3gf.jpg" 
+            <TeamMemberCard
+              name="Venkataraman TSK"
+              role="Frontend Developer"
+              imageUrl="https://iili.io/37Td3gf.jpg"
             />
-            <TeamMemberCard 
-              name="Shrihari" 
-              role="Hardware Developer" 
-              imageUrl="https://iili.io/37TJqoF.jpg" 
+            <TeamMemberCard
+              name="Shrihari"
+              role="Hardware Developer"
+              imageUrl="https://iili.io/37TJqoF.jpg"
             />
           </div>
         </div>
       </section>
-      
+
       {/* Institution Section */}
       <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
@@ -173,7 +173,7 @@ const About = () => {
           </div>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   );

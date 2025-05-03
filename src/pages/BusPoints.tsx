@@ -21,8 +21,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 import { supabase } from '@/integrations/supabase/client';
 import { Json } from '@/integrations/supabase/types';
 import { Timeline } from "@/components/ui/timeline";
@@ -421,8 +421,8 @@ const BusPoints = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
 
       <main className="flex-1 bus-pattern-light py-16 bg-background dark:bg-background">
         <div className="container px-4 mx-auto">

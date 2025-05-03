@@ -25,8 +25,8 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { useAppDispatch, useAppSelector } from '@/redux/hooks';
 import { login } from '@/redux/slices/authSlice';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 import { setupDemoData } from '@/utils/setupDemoData';
 import { useToast } from '@/hooks/use-toast';
 import { checkUserExists } from '@/utils/checkUserExists';
@@ -163,8 +163,8 @@ const Login = () => {
   // };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
 
       <main className="flex-1 bus-hero-pattern flex items-center justify-center p-4">
         <div className="w-full max-w-md">

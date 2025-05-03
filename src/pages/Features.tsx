@@ -1,17 +1,17 @@
 import React from 'react';
 import { BusFront, Clock, Users, Bell, Shield, Smartphone, Database, Search, PenTool, UserPlus, LogIn } from 'lucide-react';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 import { Button } from "@/components/ui/button";
 
 // Feature Card Component
-const FeatureCard = ({ 
-  icon: Icon, 
-  title, 
-  description 
-}: { 
-  icon: React.ComponentType<any>; 
-  title: string; 
+const FeatureCard = ({
+  icon: Icon,
+  title,
+  description
+}: {
+  icon: React.ComponentType<any>;
+  title: string;
   description: string;
 }) => (
   <div className="rounded-xl bg-card dark:bg-card shadow-md p-6 transition-all hover:shadow-lg hover:-translate-y-1 border border-border">
@@ -25,9 +25,9 @@ const FeatureCard = ({
 
 const Features = () => {
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
-      
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
+
       {/* Hero Section */}
       <section className="bus-hero-pattern py-16 md:py-20">
         <div className="container mx-auto px-4">
@@ -41,7 +41,7 @@ const Features = () => {
           </div>
         </div>
       </section>
-      
+
       {/* Features Section */}
       <section className="py-16 bg-gray-50 dark:bg-gray-900">
         <div className="container mx-auto px-4">
@@ -51,57 +51,57 @@ const Features = () => {
               Explore the powerful capabilities of our IoT-enabled bus tracking system
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <FeatureCard 
-              icon={BusFront} 
-              title="Real-Time Bus Tracking" 
+            <FeatureCard
+              icon={BusFront}
+              title="Real-Time Bus Tracking"
               description="Monitor bus location and status (inside or outside campus) in real-time with RFID technology."
             />
-            <FeatureCard 
-              icon={Clock} 
-              title="Automatic Timestamping" 
+            <FeatureCard
+              icon={Clock}
+              title="Automatic Timestamping"
               description="System automatically logs entry and exit times for comprehensive reporting and analysis."
             />
-            <FeatureCard 
-              icon={Users} 
-              title="Student Count Management" 
+            <FeatureCard
+              icon={Users}
+              title="Student Count Management"
               description="Easy interface for drivers to record and update daily student counts for each route."
             />
-            <FeatureCard 
-              icon={Bell} 
-              title="Notification System" 
+            <FeatureCard
+              icon={Bell}
+              title="Notification System"
               description="Automated alerts and reminders for bus status, student count submissions, and system updates."
             />
-            <FeatureCard 
-              icon={Shield} 
-              title="Role-Based Access Control" 
+            <FeatureCard
+              icon={Shield}
+              title="Role-Based Access Control"
               description="Secure access system with separate admin and driver portals with appropriate privileges."
             />
-            <FeatureCard 
-              icon={Smartphone} 
-              title="Mobile-Friendly Interface" 
+            <FeatureCard
+              icon={Smartphone}
+              title="Mobile-Friendly Interface"
               description="Responsive design ensures the system is accessible on any device, including smartphones."
             />
-            <FeatureCard 
-              icon={Database} 
-              title="Comprehensive Data Management" 
+            <FeatureCard
+              icon={Database}
+              title="Comprehensive Data Management"
               description="Store and manage all bus-related data in a centralized database for easy access and reporting."
             />
-            <FeatureCard 
-              icon={Search} 
-              title="Advanced Search & Filtering" 
+            <FeatureCard
+              icon={Search}
+              title="Advanced Search & Filtering"
               description="Find specific information quickly with powerful search and filtering capabilities."
             />
-            <FeatureCard 
-              icon={PenTool} 
-              title="Customizable Driver Profiles" 
+            <FeatureCard
+              icon={PenTool}
+              title="Customizable Driver Profiles"
               description="Manage driver details, assigned buses, and contact information in personalized profiles."
             />
           </div>
         </div>
       </section>
-      
+
       {/* Admin vs Driver Features */}
       <section className="py-16 bg-background dark:bg-background">
         <div className="container mx-auto px-4">
@@ -111,7 +111,7 @@ const Features = () => {
               Our system provides tailored experiences for different users
             </p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-5xl mx-auto">
             {/* Admin Features */}
             <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 border border-border">
@@ -150,7 +150,7 @@ const Features = () => {
                 </li>
               </ul>
             </div>
-            
+
             {/* Driver Features */}
             <div className="bg-card dark:bg-card rounded-xl shadow-md p-8 border border-border">
               <div className="mb-6 p-4 bus-gradient-bg rounded-full inline-flex">
@@ -191,7 +191,7 @@ const Features = () => {
           </div>
         </div>
       </section>
-      
+
       {/* CTA Section */}
       <section className="bus-gradient-bg py-16 text-white">
         <div className="container mx-auto px-4 text-center">
@@ -211,7 +211,7 @@ const Features = () => {
           </div>
         </div>
       </section>
-      
+
       <Footer />
     </div>
   );

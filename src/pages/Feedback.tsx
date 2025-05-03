@@ -22,8 +22,8 @@ import {
 } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useToast } from '@/hooks/use-toast';
-import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { ResizableNavbar } from '@/components/ResizableNavbar';
 import { supabase } from '@/integrations/supabase/client';
 
 enum FeedbackType {
@@ -74,7 +74,7 @@ const Feedback = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+
     // Validate form
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       toast({
@@ -86,7 +86,7 @@ const Feedback = () => {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       // Submit feedback to Supabase
       const { error } = await (supabase as any)
@@ -103,13 +103,13 @@ const Feedback = () => {
         ]);
 
       if (error) throw error;
-      
+
       // Show success message
       setIsSuccess(true);
-      
+
       // Reset form
       setFormData(initialFormData);
-      
+
       toast({
         title: "Feedback Submitted",
         description: "Thank you for your feedback! Your input helps us improve our service.",
@@ -127,8 +127,8 @@ const Feedback = () => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Navbar />
+    <div className="flex flex-col min-h-screen pt-20">
+      <ResizableNavbar />
       <main className="flex-grow bg-background">
         <div className="container mx-auto py-12 px-4 md:px-6 max-w-4xl animate-fade-in">
           <div className="text-center mb-8">
@@ -151,8 +151,8 @@ const Feedback = () => {
                       Thank you for sharing your thoughts. Your feedback helps us improve our service.
                     </p>
                   </div>
-                  <Button 
-                    onClick={() => setIsSuccess(false)} 
+                  <Button
+                    onClick={() => setIsSuccess(false)}
                     className="mt-4"
                   >
                     Submit Another Feedback
@@ -195,7 +195,7 @@ const Feedback = () => {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="busNumber">Bus Number (Optional)</Label>
@@ -224,7 +224,7 @@ const Feedback = () => {
                       </Select>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Label htmlFor="message">
                       Your Feedback <span className="text-red-500">*</span>
@@ -249,15 +249,15 @@ const Feedback = () => {
                   </Alert>
                 </CardContent>
                 <CardFooter className="border-t pt-4 px-6 flex flex-wrap gap-3 justify-end">
-                  <Button 
-                    variant="outline" 
-                    type="button" 
+                  <Button
+                    variant="outline"
+                    type="button"
                     onClick={() => navigate(-1)}
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -280,4 +280,4 @@ const Feedback = () => {
   );
 };
 
-export default Feedback; 
+export default Feedback;
