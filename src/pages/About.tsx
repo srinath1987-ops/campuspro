@@ -148,7 +148,7 @@ const About = () => {
             <TeamMemberCard
               name="Venkataraman TSK"
               role="Frontend Developer"
-              imageUrl="https://iili.io/37Td3gf.jpg"
+              imageUrl="https://iili.io/3OrS8Xf.jpg"
             />
             <TeamMemberCard
               name="Shrihari"
